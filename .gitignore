@@ -1,0 +1,24 @@
+# Training outputs and model checkpoints
+whisper-base-yoruba/
+yoruba_whisper_lora/
+test_output_3samples/
+
+# Python and environment
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.claude/
