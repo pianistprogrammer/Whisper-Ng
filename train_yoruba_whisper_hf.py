@@ -1,5 +1,11 @@
 """
-Fine-tuning OpenAI Whisper (base) on Yoruba (yor_tts) using Hugging Face Transformers.
+Fine-tuning OpenAI Whisper (base) on 4 Nigerian languages using Hugging Face Transformers.
+
+Languages:
+  - Yoruba  (yor_tts)
+  - Hausa   (hau_tts)
+  - Igbo    (ibo_tts)
+  - Pidgin English (pcm_tts)
 
 Requirements:
     pip install transformers datasets accelerate evaluate jiwer tensorboard
@@ -18,7 +24,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 import evaluate
 
-from datasets import load_dataset, DatasetDict, Audio
+from datasets import load_dataset, concatenate_datasets, DatasetDict, Audio
 from transformers import (
     WhisperFeatureExtractor,
     WhisperTokenizer,
@@ -34,11 +40,18 @@ from transformers import (
 
 MODEL_NAME = "openai/whisper-base"
 DATASET_NAME = "google/WaxalNLP"
-DATASET_CONFIG = "yor_tts"
-LANGUAGE = "yoruba"
 TASK = "transcribe"
 
-OUTPUT_DIR = "./whisper-base-yoruba"
+# All 4 Nigerian language configs to combine
+LANGUAGE_CONFIGS = [
+    {"config": "yor_tts", "language": "yoruba"},
+    {"config": "hau_tts", "language": "hausa"},
+    {"config": "ibo_tts", "language": "igbo"},
+    {"config": "pcm_tts", "language": "english"},  # Pidgin uses English tokenizer
+]
+
+RANDOM_SEED = 42
+OUTPUT_DIR = "./whisper-base-nigerian"
 SAMPLE_RATE = 16000
 
 # Training hyperparameters
@@ -57,27 +70,41 @@ LOGGING_STEPS = 25
 
 print("Loading feature extractor, tokenizer, and processor...")
 feature_extractor = WhisperFeatureExtractor.from_pretrained(MODEL_NAME)
-tokenizer = WhisperTokenizer.from_pretrained(MODEL_NAME, language=LANGUAGE, task=TASK)
-processor = WhisperProcessor.from_pretrained(MODEL_NAME, language=LANGUAGE, task=TASK)
+# No language forced — multilingual mode lets Whisper handle all 4 languages
+tokenizer = WhisperTokenizer.from_pretrained(MODEL_NAME, task=TASK)
+processor = WhisperProcessor.from_pretrained(MODEL_NAME, task=TASK)
 
 # ---------------------------------------------------------------------------
-# Load and Prepare Dataset
+# Load and Prepare Dataset — all 4 languages
 # ---------------------------------------------------------------------------
 
-print("Loading dataset...")
-raw_dataset = load_dataset(DATASET_NAME, DATASET_CONFIG)
+print("Loading datasets for all 4 languages...")
+all_train, all_val, all_test = [], [], []
 
-# Cast audio to correct sampling rate FIRST
-print(f"Setting audio sampling rate to {SAMPLE_RATE}Hz...")
-raw_dataset = raw_dataset.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+for lang_cfg in LANGUAGE_CONFIGS:
+    cfg, lang = lang_cfg["config"], lang_cfg["language"]
+    print(f"  Loading {lang.upper()} ({cfg})...", flush=True)
+    ds = load_dataset(DATASET_NAME, cfg)
+    ds = ds.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+    print(f"    train={len(ds['train']):,}  val={len(ds['validation']):,}  test={len(ds['test']):,}")
+    all_train.append(ds["train"])
+    all_val.append(ds["validation"])
+    all_test.append(ds["test"])
 
-# Combine train and validation for training
-print("Combining train and validation splits...")
+print("\nCombining and shuffling all languages...", flush=True)
+combined_train = concatenate_datasets(all_train).shuffle(seed=RANDOM_SEED)
+combined_val   = concatenate_datasets(all_val).shuffle(seed=RANDOM_SEED)
+combined_test  = concatenate_datasets(all_test).shuffle(seed=RANDOM_SEED)
+
+print(f"  Combined train : {len(combined_train):,}")
+print(f"  Combined val   : {len(combined_val):,}")
+print(f"  Combined test  : {len(combined_test):,}")
+
+# Use train + val for training (maximise data), test for evaluation
+print("\nBuilding final DatasetDict...")
 common_voice = DatasetDict()
-common_voice["train"] = load_dataset(DATASET_NAME, DATASET_CONFIG, split="train+validation")
-common_voice["train"] = common_voice["train"].cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
-common_voice["test"] = load_dataset(DATASET_NAME, DATASET_CONFIG, split="test")
-common_voice["test"] = common_voice["test"].cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+common_voice["train"] = concatenate_datasets([combined_train, combined_val]).shuffle(seed=RANDOM_SEED)
+common_voice["test"]  = combined_test
 
 # ---------------------------------------------------------------------------
 # Prepare Data
@@ -167,10 +194,10 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 print("Loading pre-trained Whisper model...")
 model = WhisperForConditionalGeneration.from_pretrained(MODEL_NAME)
 
-# Set language and task for generation
-model.generation_config.language = LANGUAGE
+# Multilingual mode — do NOT force a single language token
 model.generation_config.task = TASK
 model.generation_config.forced_decoder_ids = None
+model.generation_config.language = None
 
 # ---------------------------------------------------------------------------
 # Evaluation Metrics
@@ -272,3 +299,4 @@ print("\nTo use your model:")
 print(f"from transformers import WhisperForConditionalGeneration, WhisperProcessor")
 print(f'model = WhisperForConditionalGeneration.from_pretrained("{OUTPUT_DIR}")')
 print(f'processor = WhisperProcessor.from_pretrained("{OUTPUT_DIR}")')
+print("\nLanguages fine-tuned on: Yoruba, Hausa, Igbo, Pidgin English")
