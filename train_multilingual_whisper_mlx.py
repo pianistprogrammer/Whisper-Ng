@@ -25,6 +25,7 @@ import math
 import time
 import gc
 import multiprocessing as mp
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -268,9 +269,10 @@ def forward_loss(model, features, labels):
 # ---------------------------------------------------------------------------
 
 def save_training_graphs(history: dict, output_dir: Path):
-    """Generate and save 3 training graphs."""
-    graphs_dir = output_dir / "graphs"
-    graphs_dir.mkdir(exist_ok=True)
+    """Generate and save training graphs into a timestamped subdirectory."""
+    timestamp  = datetime.now().strftime("%Y%m%d_%H%M%S")
+    graphs_dir = output_dir / f"graphs_{timestamp}"
+    graphs_dir.mkdir(parents=True, exist_ok=True)
 
     epochs     = history["epochs"]
     train_loss = history["train_loss"]

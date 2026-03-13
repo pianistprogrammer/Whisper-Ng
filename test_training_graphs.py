@@ -138,9 +138,13 @@ def main():
         print(f"     {p.name}")
     print("="*70)
 
-    # Open graphs folder in Finder
+    # Open the timestamped graphs folder in Finder
+    from datetime import datetime
     import subprocess
-    subprocess.run(["open", str(OUTPUT_DIR / "graphs")], check=False)
+    # Find the newest graphs_* dir that was just created
+    created = sorted((OUTPUT_DIR).glob("graphs_*"), key=lambda p: p.stat().st_mtime)
+    if created:
+        subprocess.run(["open", str(created[-1])], check=False)
 
 
 if __name__ == "__main__":
