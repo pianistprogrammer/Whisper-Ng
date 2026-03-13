@@ -26,8 +26,10 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 
 SAMPLE_RATE = 16000
 
-DEFAULT_CHECKPOINT = "whisper-base-yoruba/checkpoint-1000"
-FALLBACK_MODEL     = "openai/whisper-base"
+DEFAULT_HF_CHECKPOINT  = "whisper-base-yoruba/checkpoint-1000"
+FALLBACK_MODEL         = "openai/whisper-base"
+DEFAULT_MLX_MODEL      = "mlx-community/whisper-base-mlx"
+DEFAULT_MLX_ADAPTERS   = "multilingual_whisper_lora"
 
 LANGUAGES = {
     "Auto-detect":     None,
@@ -39,18 +41,70 @@ LANGUAGES = {
 }
 
 # ---------------------------------------------------------------------------
-# Model loading (cached so it's only done once per session)
+# HF Model loading
 # ---------------------------------------------------------------------------
 
 @st.cache_resource(show_spinner=False)
 def load_model(model_path: str):
-    """Load Whisper model and processor, cached for the session."""
+    """Load HF Whisper model and processor, cached for the session."""
     device = "cuda" if torch.cuda.is_available() else "cpu"
     processor = WhisperProcessor.from_pretrained(model_path)
     model = WhisperForConditionalGeneration.from_pretrained(model_path)
     model.to(device)
     model.eval()
     return processor, model, device
+
+
+# ---------------------------------------------------------------------------
+# MLX Model loading (LoRA adapters)
+# ---------------------------------------------------------------------------
+
+@st.cache_resource(show_spinner=False)
+def _build_mlx_model(mlx_model_name: str, adapter_dir: str):
+    """Load MLX Whisper base model and apply saved LoRA adapter weights."""
+    import mlx.core as mx
+    from mlx_whisper.load_models import load_model as mlx_load
+    from train_multilingual_whisper_mlx import (
+        apply_lora_to_model, LORA_LAYERS, LORA_RANK, LORA_SCALE, LORA_TARGETS,
+    )
+
+    model = mlx_load(mlx_model_name, dtype=mx.float16)
+    mx.eval(model.parameters())
+
+    adapter_path = Path(adapter_dir) / "adapters.npz"
+    has_adapters = adapter_path.exists()
+    if has_adapters:
+        model = apply_lora_to_model(model, LORA_LAYERS, LORA_RANK, LORA_SCALE, LORA_TARGETS)
+        weights = dict(mx.load(str(adapter_path)))
+        model.load_weights(list(weights.items()), strict=False)
+        mx.eval(model.parameters())
+
+    return model, has_adapters
+
+
+def transcribe_mlx(
+    audio: np.ndarray,
+    mlx_model_name: str,
+    adapter_dir: str,
+    language_code: str | None,
+) -> str:
+    """Run MLX Whisper inference, injecting the LoRA model into the transcribe pipeline."""
+    import mlx_whisper
+    from mlx_whisper.transcribe import ModelHolder
+
+    model, has_adapters = _build_mlx_model(mlx_model_name, adapter_dir)
+
+    # Inject our model (LoRA or base) so mlx_whisper.transcribe picks it up
+    cache_key = f"lora:{adapter_dir}" if has_adapters else mlx_model_name
+    ModelHolder.model = model
+    ModelHolder.model_path = cache_key
+
+    decode_opts: dict = {"task": "transcribe"}
+    if language_code:
+        decode_opts["language"] = language_code
+
+    result = mlx_whisper.transcribe(audio, path_or_hf_repo=cache_key, **decode_opts)
+    return result["text"].strip()
 
 
 # ---------------------------------------------------------------------------
@@ -124,26 +178,60 @@ def main():
     with st.sidebar:
         st.header("⚙️ Settings")
 
-        model_source = st.radio(
-            "Model source",
-            ["Local checkpoint", "HuggingFace Hub", "Base model only"],
+        backend = st.radio(
+            "Backend",
+            ["HuggingFace", "MLX (Apple Silicon)"],
             index=0,
+            help="HuggingFace uses PyTorch. MLX runs natively on Apple Silicon with LoRA adapters.",
         )
+        use_mlx = backend == "MLX (Apple Silicon)"
 
-        if model_source == "Local checkpoint":
-            model_path = st.text_input(
-                "Checkpoint path",
-                value=DEFAULT_CHECKPOINT,
-                help="Path to your local HF trainer checkpoint directory",
+        st.divider()
+
+        if use_mlx:
+            st.subheader("MLX Model")
+            mlx_model_name = st.text_input(
+                "Base model (HF repo)",
+                value=DEFAULT_MLX_MODEL,
+                help="MLX-converted Whisper repo on HuggingFace Hub",
             )
-        elif model_source == "HuggingFace Hub":
-            model_path = st.text_input(
-                "Model ID",
-                value="openai/whisper-base",
-                help="e.g. username/whisper-yoruba",
+            adapter_dir = st.text_input(
+                "LoRA adapter directory",
+                value=DEFAULT_MLX_ADAPTERS,
+                help="Folder containing adapters.npz produced by train_multilingual_whisper_mlx.py",
             )
+            adapter_exists = (Path(adapter_dir) / "adapters.npz").exists()
+            if adapter_exists:
+                st.success("✅ adapters.npz found", icon="🧩")
+            else:
+                st.warning("adapters.npz not found — will use base model only", icon="⚠️")
+            # placeholders so the rest of the code compiles
+            model_path = mlx_model_name
         else:
-            model_path = FALLBACK_MODEL
+            st.subheader("HuggingFace Model")
+            model_source = st.radio(
+                "Model source",
+                ["Local checkpoint", "HuggingFace Hub", "Base model only"],
+                index=0,
+            )
+            if model_source == "Local checkpoint":
+                model_path = st.text_input(
+                    "Checkpoint path",
+                    value=DEFAULT_HF_CHECKPOINT,
+                    help="Path to your local HF trainer checkpoint directory",
+                )
+            elif model_source == "HuggingFace Hub":
+                model_path = st.text_input(
+                    "Model ID",
+                    value="openai/whisper-base",
+                    help="e.g. username/whisper-yoruba",
+                )
+            else:
+                model_path = FALLBACK_MODEL
+            mlx_model_name = DEFAULT_MLX_MODEL
+            adapter_dir    = DEFAULT_MLX_ADAPTERS
+
+        st.divider()
 
         language = st.selectbox(
             "Language hint",
@@ -161,21 +249,36 @@ def main():
         )
 
         st.divider()
-        st.caption(f"Device: {'GPU' if torch.cuda.is_available() else 'CPU'}")
-        st.caption(f"Model: `{model_path}`")
+        if use_mlx:
+            st.caption("Device: MPS (Apple Silicon)")
+            st.caption(f"Base: `{mlx_model_name}`")
+            st.caption(f"Adapters: `{adapter_dir}`")
+        else:
+            st.caption(f"Device: {'GPU' if torch.cuda.is_available() else 'CPU'}")
+            st.caption(f"Model: `{model_path}`")
 
     # ----- Pre-load model -----
-    with st.spinner(f"Loading model `{model_path}`…"):
-        try:
-            _, _, device = load_model(model_path)
-            st.success(f"✅ Model ready  ({device.upper()})", icon="✅")
-        except Exception as e:
-            st.error(
-                f"**Failed to load model:** {e}\n\n"
-                "If using a local checkpoint, run:\n"
-                "```\npython fix_checkpoint.py whisper-base-yoruba/checkpoint-1000\n```",
-            )
-            st.stop()
+    if use_mlx:
+        with st.spinner(f"Loading MLX model `{mlx_model_name}`…"):
+            try:
+                _, has_adapters = _build_mlx_model(mlx_model_name, adapter_dir)
+                label = "fine-tuned (LoRA)" if has_adapters else "base only"
+                st.success(f"✅ MLX model ready — {label}", icon="✅")
+            except Exception as e:
+                st.error(f"**Failed to load MLX model:** {e}")
+                st.stop()
+    else:
+        with st.spinner(f"Loading model `{model_path}`…"):
+            try:
+                _, _, device = load_model(model_path)
+                st.success(f"✅ Model ready  ({device.upper()})", icon="✅")
+            except Exception as e:
+                st.error(
+                    f"**Failed to load model:** {e}\n\n"
+                    "If using a local checkpoint, run:\n"
+                    "```\npython fix_checkpoint.py whisper-base-yoruba/checkpoint-1000\n```",
+                )
+                st.stop()
 
     st.divider()
 
@@ -209,7 +312,10 @@ def main():
 
         with st.spinner("Transcribing…"):
             try:
-                text = transcribe(audio, model_path, LANGUAGES[language])
+                if use_mlx:
+                    text = transcribe_mlx(audio, mlx_model_name, adapter_dir, LANGUAGES[language])
+                else:
+                    text = transcribe(audio, model_path, LANGUAGES[language])
                 st.session_state["transcription"] = text
             except Exception as e:
                 st.error(f"Transcription failed: {e}")
