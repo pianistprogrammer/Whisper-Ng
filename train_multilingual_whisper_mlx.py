@@ -68,8 +68,8 @@ LANGUAGE_CONFIGS = [
 ]
 
 SAMPLE_RATE       = 16000
-BATCH_SIZE        = 4
-EPOCHS            = 5
+BATCH_SIZE        = 2
+EPOCHS            = 10
 LEARNING_RATE     = 1e-4
 GRAD_ACCUM_STEPS  = 2
 
@@ -264,6 +264,129 @@ def forward_loss(model, features, labels):
 
 
 # ---------------------------------------------------------------------------
+# Graph generation
+# ---------------------------------------------------------------------------
+
+def save_training_graphs(history: dict, output_dir: Path):
+    """Generate and save 3 training graphs."""
+    graphs_dir = output_dir / "graphs"
+    graphs_dir.mkdir(exist_ok=True)
+
+    epochs     = history["epochs"]
+    train_loss = history["train_loss"]
+    val_loss   = history["val_loss"]
+    steps      = history["step_numbers"]
+    step_loss  = history["step_losses"]
+
+    # ── 1. Epoch-level train vs val loss ──────────────────────────────────
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.plot(epochs, train_loss, "o-", color="#2196F3", linewidth=2, label="Train loss")
+    ax.plot(epochs, val_loss,   "s--", color="#F44336", linewidth=2, label="Val loss")
+    best_epoch = epochs[int(np.argmin(val_loss))]
+    best_val   = min(val_loss)
+    ax.axvline(best_epoch, color="gray", linestyle=":", alpha=0.7, label=f"Best val (epoch {best_epoch})")
+    ax.set_xlabel("Epoch", fontsize=12)
+    ax.set_ylabel("Cross-Entropy Loss", fontsize=12)
+    ax.set_title("Train vs Validation Loss", fontsize=14, fontweight="bold")
+    ax.legend(fontsize=11)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    path1 = graphs_dir / "train_val_loss.png"
+    fig.savefig(path1, dpi=150)
+    plt.close(fig)
+    print(f"  ✓ Saved: {path1}")
+
+    # ── 2. Per-step raw loss curve ─────────────────────────────────────────
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.plot(steps, step_loss, color="#9C27B0", alpha=0.4, linewidth=0.8, label="Step loss")
+    # Smoothed overlay
+    if len(step_loss) >= SMOOTH_WINDOW:
+        kernel = np.ones(SMOOTH_WINDOW) / SMOOTH_WINDOW
+        smoothed = np.convolve(step_loss, kernel, mode="valid")
+        smooth_x = steps[SMOOTH_WINDOW - 1:]
+        ax.plot(smooth_x, smoothed, color="#9C27B0", linewidth=2,
+                label=f"Smoothed (window={SMOOTH_WINDOW})")
+    ax.set_xlabel("Global Step", fontsize=12)
+    ax.set_ylabel("Loss", fontsize=12)
+    ax.set_title("Per-Step Training Loss", fontsize=14, fontweight="bold")
+    ax.legend(fontsize=11)
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+    path2 = graphs_dir / "step_loss.png"
+    fig.savefig(path2, dpi=150)
+    plt.close(fig)
+    print(f"  ✓ Saved: {path2}")
+
+    # ── 3. Val loss improvement bar chart ─────────────────────────────────
+    fig, ax = plt.subplots(figsize=(max(6, len(epochs) * 0.8 + 2), 5))
+    colors = ["#4CAF50" if v == min(val_loss) else "#90CAF9" for v in val_loss]
+    bars = ax.bar(epochs, val_loss, color=colors, edgecolor="white", linewidth=0.5)
+    ax.set_xlabel("Epoch", fontsize=12)
+    ax.set_ylabel("Validation Loss", fontsize=12)
+    ax.set_title("Validation Loss per Epoch  (green = best)", fontsize=14, fontweight="bold")
+    ax.set_xticks(epochs)
+    for bar, v in zip(bars, val_loss):
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.005,
+                f"{v:.3f}", ha="center", va="bottom", fontsize=9)
+    ax.grid(True, axis="y", alpha=0.3)
+    fig.tight_layout()
+    path3 = graphs_dir / "val_loss_bars.png"
+    fig.savefig(path3, dpi=150)
+    plt.close(fig)
+    print(f"  ✓ Saved: {path3}")
+
+    # ── 4. Combined 2×2 dashboard ─────────────────────────────────────────
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+    fig.suptitle("Multilingual Whisper Fine-Tuning\n(Yoruba · Hausa · Igbo · Pidgin)",
+                 fontsize=14, fontweight="bold")
+
+    # top-left: train vs val
+    axes[0, 0].plot(epochs, train_loss, "o-", color="#2196F3", label="Train")
+    axes[0, 0].plot(epochs, val_loss,   "s--", color="#F44336", label="Val")
+    axes[0, 0].set_title("Train vs Val Loss")
+    axes[0, 0].set_xlabel("Epoch")
+    axes[0, 0].set_ylabel("Loss")
+    axes[0, 0].legend()
+    axes[0, 0].grid(True, alpha=0.3)
+
+    # top-right: val bar
+    axes[0, 1].bar(epochs, val_loss, color=colors, edgecolor="white")
+    axes[0, 1].set_title("Val Loss per Epoch")
+    axes[0, 1].set_xlabel("Epoch")
+    axes[0, 1].set_ylabel("Val Loss")
+    axes[0, 1].set_xticks(epochs)
+    axes[0, 1].grid(True, axis="y", alpha=0.3)
+
+    # bottom-left: step loss
+    axes[1, 0].plot(steps, step_loss, color="#9C27B0", alpha=0.35, linewidth=0.7)
+    if len(step_loss) >= SMOOTH_WINDOW:
+        axes[1, 0].plot(smooth_x, smoothed, color="#9C27B0", linewidth=1.8)
+    axes[1, 0].set_title("Step Loss (raw + smoothed)")
+    axes[1, 0].set_xlabel("Step")
+    axes[1, 0].set_ylabel("Loss")
+    axes[1, 0].grid(True, alpha=0.3)
+
+    # bottom-right: gap (train - val)
+    gap = [t - v for t, v in zip(train_loss, val_loss)]
+    gap_colors = ["#EF9A9A" if g < 0 else "#A5D6A7" for g in gap]
+    axes[1, 1].bar(epochs, gap, color=gap_colors, edgecolor="white")
+    axes[1, 1].axhline(0, color="black", linewidth=0.8)
+    axes[1, 1].set_title("Train − Val Gap  (+ = overfitting, − = underfitting)")
+    axes[1, 1].set_xlabel("Epoch")
+    axes[1, 1].set_ylabel("Gap")
+    axes[1, 1].set_xticks(epochs)
+    axes[1, 1].grid(True, axis="y", alpha=0.3)
+
+    fig.tight_layout()
+    path4 = graphs_dir / "dashboard.png"
+    fig.savefig(path4, dpi=150)
+    plt.close(fig)
+    print(f"  ✓ Saved: {path4}")
+
+    print(f"\n  All graphs saved to: {graphs_dir.absolute()}")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -399,10 +522,12 @@ def main():
     
     history = {
         "epochs": [],
-        "steps": [],
         "train_loss": [],
         "val_loss": [],
+        "step_losses": [],   # (global_step, loss) for every batch
+        "step_numbers": [],
     }
+    global_step = 0
 
     for epoch in range(EPOCHS):
         print(f"\n[EPOCH {epoch+1}/{EPOCHS}]")
@@ -414,10 +539,13 @@ def main():
             loss, grads = loss_and_grad_fn(model, features, labels)
             apply_lora_updates(model, grads, optimizer)
             mx.eval(model.parameters(), optimizer.state)
-            
+
             loss_val = float(loss.item())
             epoch_losses.append(loss_val)
-            
+            global_step += 1
+            history["step_losses"].append(loss_val)
+            history["step_numbers"].append(global_step)
+
             if (batch_idx + 1) % 10 == 0:
                 avg_loss = np.mean(epoch_losses[-10:])
                 print(f"    Step {batch_idx+1:,}: loss={loss_val:.4f} (avg={avg_loss:.4f})", flush=True)
@@ -461,9 +589,16 @@ def main():
     with open(metrics_path, "w") as f:
         json.dump(history, f, indent=2)
     print(f"✓ Saved metrics to: {metrics_path}")
-    
+
+    # ------------------------------------------------------------------
+    # Generate graphs
+    # ------------------------------------------------------------------
+    print("\nGenerating training graphs...", flush=True)
+    save_training_graphs(history, OUTPUT_DIR)
+
     print("\n✓ Training complete!")
     print(f"  Output directory: {OUTPUT_DIR.absolute()}")
+    print(f"  Graphs saved to: {OUTPUT_DIR}/graphs/")
 
 
 if __name__ == "__main__":
