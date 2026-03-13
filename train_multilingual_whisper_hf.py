@@ -60,14 +60,31 @@ RANDOM_SEED = 42
 OUTPUT_DIR = "./whisper-base-nigerian"
 SAMPLE_RATE = 16000
 
-# Training hyperparameters
+# ---------------------------------------------------------------------------
+# Training hyperparameters  (tuned for 4-language multilingual training)
+# ---------------------------------------------------------------------------
+# Effective batch size = BATCH_SIZE × GRADIENT_ACCUMULATION_STEPS
+# Currently: 4 × 8 = 32 — larger effective batch stabilises multilingual gradients
 BATCH_SIZE = 4
-GRADIENT_ACCUMULATION_STEPS = 1
-LEARNING_RATE = 1e-5
-WARMUP_STEPS = 500
-MAX_STEPS = 5000
-EVAL_STEPS = 1000
-SAVE_STEPS = 1000
+GRADIENT_ACCUMULATION_STEPS = 8   # was 1 → effective batch 32 instead of 4
+
+# Slightly higher LR works better with the larger effective batch (linear scaling rule).
+# 1e-4 is the standard for Whisper fine-tuning; with warmup it won't diverge.
+LEARNING_RATE = 1e-4              # was 1e-5
+
+# Warmup should cover ~5-10 % of total steps.
+# With 20 000 steps → 1000 warmup = 5 %.
+WARMUP_STEPS = 1000               # was 500
+
+# 5 000 steps on 4 languages barely reached checkpoint-1000 level quality.
+# 20 000 steps ≈ 3-4 full passes over the ~6 000-sample combined training set
+# at effective batch 32, giving the model enough exposure to all 4 languages.
+MAX_STEPS = 20000                 # was 5000
+
+# Evaluate and checkpoint every 2 000 steps so we keep fine-grained snapshots.
+EVAL_STEPS  = 2000               # was 1000
+SAVE_STEPS  = 2000               # was 1000
+
 LOGGING_STEPS = 25
 SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
 
@@ -205,6 +222,13 @@ model.generation_config.task = TASK
 model.generation_config.forced_decoder_ids = None
 model.generation_config.language = None
 
+# Freeze encoder for the first half of training.
+# The encoder already has strong audio representations from OpenAI pre-training.
+# Unfreezing it too early on a small dataset causes catastrophic forgetting.
+# We freeze it globally; a callback below unfreezes it at step MAX_STEPS // 2.
+model.freeze_encoder()
+print(f"Encoder frozen for first {MAX_STEPS // 2} steps, then unfreezes.")
+
 # ---------------------------------------------------------------------------
 # Evaluation Metrics
 # ---------------------------------------------------------------------------
@@ -262,11 +286,33 @@ training_args = Seq2SeqTrainingArguments(
     metric_for_best_model="wer",
     greater_is_better=False,
     push_to_hub=False,  # Set to True if you want to push to Hub
+    # Regularisation: dropout and weight decay guard against over-fitting
+    # on a small ~6 000-sample multilingual dataset.
+    weight_decay=0.01,
+    # Keep only the 3 best checkpoints to save disk space.
+    save_total_limit=3,
 )
 
 # ---------------------------------------------------------------------------
 # Initialize Trainer
 # ---------------------------------------------------------------------------
+
+# Unfreeze encoder halfway through training so the full model can adapt
+# once the decoder is already learning the target languages.
+from transformers import TrainerCallback
+
+class UnfreezeEncoderCallback(TrainerCallback):
+    """Unfreeze the Whisper encoder after MAX_STEPS // 2 steps."""
+    def __init__(self, unfreeze_at: int):
+        self.unfreeze_at = unfreeze_at
+        self._unfrozen = False
+
+    def on_step_begin(self, args, state, control, model=None, **kwargs):
+        if not self._unfrozen and state.global_step >= self.unfreeze_at:
+            for param in model.model.encoder.parameters():
+                param.requires_grad = True
+            self._unfrozen = True
+            print(f"\n✓ Encoder unfrozen at step {state.global_step}", flush=True)
 
 print("Initializing trainer...")
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(
@@ -281,6 +327,7 @@ trainer = Seq2SeqTrainer(
     eval_dataset=common_voice["test"],
     data_collator=data_collator,
     compute_metrics=compute_metrics,
+    callbacks=[UnfreezeEncoderCallback(unfreeze_at=MAX_STEPS // 2)],
 )
 
 # ---------------------------------------------------------------------------

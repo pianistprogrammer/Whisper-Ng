@@ -44,11 +44,13 @@ python train_yoruba_whisper_mlx.py
 ```bash
 python train_yoruba_whisper_hf.py
 ```
-- Outputs: `whisper-base-yoruba/` checkpoint directory, tensorboard logs
+
+- Outputs: `multilingual_whisper_hf/` checkpoint directory, tensorboard logs
 
 ## Configuration
 
 ### MLX
+
 ```python
 LORA_RANK = 8              # Rank of low-rank matrices
 LORA_SCALE = 20            # LoRA contribution scaling
@@ -59,6 +61,7 @@ EPOCHS = 5
 ```
 
 ### HF
+
 ```python
 BATCH_SIZE = 16
 LEARNING_RATE = 1e-5
@@ -69,6 +72,7 @@ EVAL_STEPS = 1000
 ## Performance
 
 ### Tested Validations
+
 - ✅ 3-sample training test (MLX): Forward pass, loss computation, gradient updates
 - ✅ 3-sample training test (HF): No attention mask warnings, clean loss calculation
 - ✅ LoRA parameter counting: 196,608 trainable / 72,022,544 total (0.273%)
@@ -118,13 +122,15 @@ EVAL_STEPS = 1000
 ## Outputs
 
 ### MLX
+
 - `yoruba_whisper_lora/adapters.npz` - LoRA weights only
 - `yoruba_whisper_lora/metrics.json` - Epoch/step metrics
 - `yoruba_whisper_lora/loss_curves.png` - Training visualization
 - `yoruba_whisper_lora/wer_cer.png` - Evaluation metrics
 
 ### HF
-- `whisper-base-yoruba/` - Full model checkpoint
+
+- `multilingual_whisper_hf/` - Full model checkpoint
 - `runs/` - Tensorboard logs
 
 ## References

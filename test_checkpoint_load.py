@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 from transformers import WhisperProcessor, WhisperForConditionalGeneration
 
-checkpoint = "whisper-base-yoruba/checkpoint-1000"
+checkpoint = "multilingual_whisper_hf/checkpoint-1000"
 
 print(f"Testing checkpoint: {checkpoint}")
 print(f"Checkpoint exists: {Path(checkpoint).exists()}", flush=True)

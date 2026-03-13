@@ -1,5 +1,5 @@
 # Training outputs and model checkpoints
-whisper-base-yoruba/
+multilingual_whisper_hf/
 yoruba_whisper_lora/
 test_output_3samples/
 multilingual_whisper_lora/

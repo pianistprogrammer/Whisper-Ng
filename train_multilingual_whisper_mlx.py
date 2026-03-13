@@ -70,7 +70,7 @@ LANGUAGE_CONFIGS = [
 
 SAMPLE_RATE       = 16000
 BATCH_SIZE        = 2
-EPOCHS            = 10
+EPOCHS            = 4
 LEARNING_RATE     = 1e-4
 GRAD_ACCUM_STEPS  = 2
 
@@ -526,10 +526,12 @@ def main():
         "epochs": [],
         "train_loss": [],
         "val_loss": [],
-        "step_losses": [],   # (global_step, loss) for every batch
+        "step_losses": [],
         "step_numbers": [],
     }
     global_step = 0
+    best_val_loss = float("inf")
+    best_epoch    = 0
 
     for epoch in range(EPOCHS):
         print(f"\n[EPOCH {epoch+1}/{EPOCHS}]")
@@ -569,6 +571,18 @@ def main():
         history["val_loss"].append(avg_val_loss)
         
         print(f"  ✓ Val loss: {avg_val_loss:.6f}", flush=True)
+
+        # Save best-epoch adapters whenever val loss improves
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            best_epoch    = epoch + 1
+            best_weights = {k: np.array(v) for k, v in
+                            ((n, p) for n, p in tree_flatten(model.parameters())
+                             if "lora_A" in n or "lora_B" in n)}
+            best_path = OUTPUT_DIR / "best_adapters.npz"
+            np.savez(best_path, **best_weights)
+            print(f"  ★ New best val loss — saved to: {best_path}", flush=True)
+
         sys.stdout.flush()
 
     # Save results
@@ -576,7 +590,7 @@ def main():
     print("TRAINING COMPLETE - SAVING RESULTS")
     print("=" * 70)
     
-    # Save LoRA weights
+    # Save LoRA weights (final epoch)
     lora_weights = {}
     for name, p in tree_flatten(model.parameters()):
         if "lora_A" in name or "lora_B" in name:
@@ -584,7 +598,8 @@ def main():
     
     adapter_path = OUTPUT_DIR / "adapters.npz"
     np.savez(adapter_path, **{k: np.array(v) for k, v in lora_weights.items()})
-    print(f"\n✓ Saved adapters to: {adapter_path}")
+    print(f"\n✓ Saved final adapters to: {adapter_path}")
+    print(f"✓ Best adapters (epoch {best_epoch}, val_loss={best_val_loss:.4f}) in: {OUTPUT_DIR / 'best_adapters.npz'}")
     
     # Save metrics
     metrics_path = OUTPUT_DIR / "metrics.json"

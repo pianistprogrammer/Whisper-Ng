@@ -7,11 +7,12 @@ Run:
     streamlit run app.py
 
 If using a local checkpoint, first run:
-    python fix_checkpoint.py whisper-base-yoruba/checkpoint-1000
+    python fix_checkpoint.py multilingual_whisper_hf/checkpoint-1000
 """
 
 import time
 import io
+from pathlib import Path
 import numpy as np
 import streamlit as st
 import sounddevice as sd
@@ -26,7 +27,7 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 
 SAMPLE_RATE = 16000
 
-DEFAULT_HF_CHECKPOINT  = "whisper-base-yoruba/checkpoint-1000"
+DEFAULT_HF_CHECKPOINT  = "multilingual_whisper_hf/checkpoint-1000"
 FALLBACK_MODEL         = "openai/whisper-base"
 DEFAULT_MLX_MODEL      = "mlx-community/whisper-base-mlx"
 DEFAULT_MLX_ADAPTERS   = "multilingual_whisper_lora"
@@ -60,7 +61,7 @@ def load_model(model_path: str):
 # ---------------------------------------------------------------------------
 
 @st.cache_resource(show_spinner=False)
-def _build_mlx_model(mlx_model_name: str, adapter_dir: str):
+def _build_mlx_model(mlx_model_name: str, adapter_dir: str, adapter_file: str = "adapters.npz"):
     """Load MLX Whisper base model and apply saved LoRA adapter weights."""
     import mlx.core as mx
     from mlx_whisper.load_models import load_model as mlx_load
@@ -71,7 +72,7 @@ def _build_mlx_model(mlx_model_name: str, adapter_dir: str):
     model = mlx_load(mlx_model_name, dtype=mx.float16)
     mx.eval(model.parameters())
 
-    adapter_path = Path(adapter_dir) / "adapters.npz"
+    adapter_path = Path(adapter_dir) / adapter_file
     has_adapters = adapter_path.exists()
     if has_adapters:
         model = apply_lora_to_model(model, LORA_LAYERS, LORA_RANK, LORA_SCALE, LORA_TARGETS)
@@ -86,25 +87,38 @@ def transcribe_mlx(
     audio: np.ndarray,
     mlx_model_name: str,
     adapter_dir: str,
+    adapter_file: str,
     language_code: str | None,
 ) -> str:
     """Run MLX Whisper inference, injecting the LoRA model into the transcribe pipeline."""
     import mlx_whisper
     from mlx_whisper.transcribe import ModelHolder
 
-    model, has_adapters = _build_mlx_model(mlx_model_name, adapter_dir)
+    model, has_adapters = _build_mlx_model(mlx_model_name, adapter_dir, adapter_file)
 
     # Inject our model (LoRA or base) so mlx_whisper.transcribe picks it up
-    cache_key = f"lora:{adapter_dir}" if has_adapters else mlx_model_name
+    cache_key = f"lora:{adapter_dir}/{adapter_file}" if has_adapters else mlx_model_name
     ModelHolder.model = model
     ModelHolder.model_path = cache_key
 
-    decode_opts: dict = {"task": "transcribe"}
+    decode_opts: dict = {
+        "task": "transcribe",
+        "fp16": False,                        # adapters saved as float32
+        "temperature": (0.0, 0.2, 0.4),       # try greedy first, fall back to sampling
+        "condition_on_previous_text": False,  # key fix: prevents repetition spirals
+        "compression_ratio_threshold": 1.8,   # fail fast when output is repetitive
+        "logprob_threshold": -0.8,            # fail fast when model is uncertain
+        "no_speech_threshold": 0.5,
+    }
     if language_code:
         decode_opts["language"] = language_code
 
     result = mlx_whisper.transcribe(audio, path_or_hf_repo=cache_key, **decode_opts)
-    return result["text"].strip()
+    text = result["text"].strip()
+    # Post-process: collapse any remaining repeated phrases (safety net)
+    import re
+    text = re.sub(r'(\b\w[\w\s]{1,30})\s+(?:\1\s*){3,}', r'\1 [...]', text).strip()
+    return text
 
 
 # ---------------------------------------------------------------------------
@@ -200,10 +214,23 @@ def main():
                 value=DEFAULT_MLX_ADAPTERS,
                 help="Folder containing adapters.npz produced by train_multilingual_whisper_mlx.py",
             )
-            adapter_exists = (Path(adapter_dir) / "adapters.npz").exists()
-            if adapter_exists:
-                st.success("✅ adapters.npz found", icon="🧩")
+            has_best = (Path(adapter_dir) / "best_adapters.npz").exists()
+            has_final = (Path(adapter_dir) / "adapters.npz").exists()
+            if has_best or has_final:
+                adapter_choices = []
+                if has_best:
+                    adapter_choices.append("best_adapters.npz  (lowest val loss epoch)")
+                if has_final:
+                    adapter_choices.append("adapters.npz  (final epoch)")
+                adapter_file_label = st.radio(
+                    "Adapter weights to use",
+                    adapter_choices,
+                    index=0,
+                )
+                adapter_file = "best_adapters.npz" if "best" in adapter_file_label else "adapters.npz"
+                st.success(f"✅ {adapter_file} found", icon="🧩")
             else:
+                adapter_file = "adapters.npz"
                 st.warning("adapters.npz not found — will use base model only", icon="⚠️")
             # placeholders so the rest of the code compiles
             model_path = mlx_model_name
@@ -230,6 +257,7 @@ def main():
                 model_path = FALLBACK_MODEL
             mlx_model_name = DEFAULT_MLX_MODEL
             adapter_dir    = DEFAULT_MLX_ADAPTERS
+            adapter_file   = "adapters.npz"
 
         st.divider()
 
@@ -261,7 +289,7 @@ def main():
     if use_mlx:
         with st.spinner(f"Loading MLX model `{mlx_model_name}`…"):
             try:
-                _, has_adapters = _build_mlx_model(mlx_model_name, adapter_dir)
+                _, has_adapters = _build_mlx_model(mlx_model_name, adapter_dir, adapter_file)
                 label = "fine-tuned (LoRA)" if has_adapters else "base only"
                 st.success(f"✅ MLX model ready — {label}", icon="✅")
             except Exception as e:
@@ -276,7 +304,7 @@ def main():
                 st.error(
                     f"**Failed to load model:** {e}\n\n"
                     "If using a local checkpoint, run:\n"
-                    "```\npython fix_checkpoint.py whisper-base-yoruba/checkpoint-1000\n```",
+                    "```\npython fix_checkpoint.py multilingual_whisper_hf/checkpoint-1000\n```",
                 )
                 st.stop()
 
@@ -313,7 +341,7 @@ def main():
         with st.spinner("Transcribing…"):
             try:
                 if use_mlx:
-                    text = transcribe_mlx(audio, mlx_model_name, adapter_dir, LANGUAGES[language])
+                    text = transcribe_mlx(audio, mlx_model_name, adapter_dir, adapter_file, LANGUAGES[language])
                 else:
                     text = transcribe(audio, model_path, LANGUAGES[language])
                 st.session_state["transcription"] = text
@@ -330,7 +358,7 @@ def main():
     if "transcription" in st.session_state:
         st.subheader("📝 Transcription")
         text = st.session_state["transcription"]
-        st.text_area("", value=text, height=150, label_visibility="collapsed")
+        st.text_area("Transcription", value=text, height=150, label_visibility="collapsed")
 
         col_copy, col_download = st.columns(2)
         with col_download:
