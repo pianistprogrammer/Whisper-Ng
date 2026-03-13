@@ -2,7 +2,7 @@
 whisper-base-yoruba/
 yoruba_whisper_lora/
 test_output_3samples/
-
+multilingual_whisper_lora/
 # Logs
 *.txt
 *.log
