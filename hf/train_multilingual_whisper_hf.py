@@ -60,6 +60,9 @@ RANDOM_SEED = 42
 OUTPUT_DIR = "./whisper-small-nigerian"
 SAMPLE_RATE = 16000
 
+# Trackio project — all runs from this script land in this project
+TRACKIO_PROJECT = "whisper-ng-nigerian"
+
 # Training hyperparameters
 BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = 16
@@ -267,7 +270,9 @@ training_args = Seq2SeqTrainingArguments(
     save_steps=SAVE_STEPS,
     eval_steps=EVAL_STEPS,
     logging_steps=LOGGING_STEPS,
-    report_to=["tensorboard"],
+    report_to=["tensorboard", "trackio"],
+    run_name=f"whisper-small-nigerian-{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+    project=TRACKIO_PROJECT,
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
@@ -525,3 +530,5 @@ print(f"from transformers import WhisperForConditionalGeneration, WhisperProcess
 print(f'model = WhisperForConditionalGeneration.from_pretrained("{OUTPUT_DIR}")')
 print(f'processor = WhisperProcessor.from_pretrained("{OUTPUT_DIR}")')
 print("\nLanguages fine-tuned on: Yoruba, Hausa, Igbo, Pidgin English")
+print(f"\nView training dashboard:")
+print(f"  trackio show --project {TRACKIO_PROJECT}")
