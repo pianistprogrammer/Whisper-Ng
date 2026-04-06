@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
-Gradio test interface for comparing fine-tuned HuggingFace Whisper models.
+Gradio test interface for the fine-tuned HuggingFace Whisper (small) model.
 
 Models available:
-  - multilingual_whisper_hf/  (trained on all 4 languages combined)
-  - whisper-base-nigerian/    (trained on all 4 Nigerian languages)
-  ... plus every checkpoint-NNNN inside each.
+  - whisper-small-nigerian/  (whisper-small fine-tuned on all 4 Nigerian languages)
+  ... plus every checkpoint-NNNN inside it.
+
+The best checkpoint is highlighted with ★ in the dropdown and is pre-selected.
+The [final] model always contains the best checkpoint weights
+(saved by load_best_model_at_end=True in the trainer).
 
 Run from the repo root:
     python hf/gradio_test.py
@@ -28,9 +31,18 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 HF_DIR = Path(__file__).parent          # .../Whisper-Ng/hf/
 
 MODEL_ROOTS = {
-    "multilingual_whisper_hf": HF_DIR / "multilingual_whisper_hf",
-    "whisper-base-nigerian":   HF_DIR / "whisper-base-nigerian",
+    "whisper-small-nigerian": HF_DIR / "whisper-small-nigerian",
 }
+
+
+def _load_best_info(root: Path) -> dict:
+    """Return the contents of best_model_info.json if present, else {}."""
+    info_file = root / "best_model_info.json"
+    if info_file.exists():
+        import json
+        with open(info_file) as f:
+            return json.load(f)
+    return {}
 
 SAMPLE_RATE = 16000
 
@@ -49,32 +61,43 @@ LANGUAGES = {
 
 def _collect_model_choices() -> list[str]:
     choices = []
+    best_default = None
     for label, root in MODEL_ROOTS.items():
         if not root.exists():
             continue
-        # Add the final saved model first
+        best_info = _load_best_info(root)
+        best_step = best_info.get("best_step")   # int or None
+
+        # Add the final saved model first — this IS the best model
         if (root / "model.safetensors").exists():
-            choices.append(f"{label}  [final]")
-        # Add checkpoints newest → oldest
+            tag = f"{label}  [final ★ best]" if best_step else f"{label}  [final]"
+            choices.append(tag)
+            if best_default is None:
+                best_default = tag   # pre-select this by default
+
+        # Add checkpoints newest → oldest, marking the best one
         ckpts = sorted(
             [d for d in root.iterdir() if d.is_dir() and d.name.startswith("checkpoint-")],
             key=lambda d: int(d.name.split("-")[1]),
             reverse=True,
         )
         for ckpt in ckpts:
-            step = ckpt.name.split("-")[1]
-            choices.append(f"{label}  [checkpoint-{step}]")
-    return choices if choices else ["No models found — check hf/ folder"]
+            step = int(ckpt.name.split("-")[1])
+            star = " ★ best" if step == best_step else ""
+            choices.append(f"{label}  [checkpoint-{step}{star}]")
+    return choices if choices else ["No models found — check hf/ folder"], best_default
 
 
-MODEL_CHOICES = _collect_model_choices()
+MODEL_CHOICES, BEST_MODEL_DEFAULT = _collect_model_choices()
 
 
 def _resolve_path(choice: str) -> Path:
     """Turn a display choice string back into an absolute Path."""
-    label, tag = choice.split("  ", 1)          # e.g. "whisper-base-nigerian", "[checkpoint-5000]"
+    label, tag = choice.split("  ", 1)          # e.g. "whisper-small-nigerian", "[final ★ best]"
     root = MODEL_ROOTS[label.strip()]
-    tag = tag.strip().strip("[]")               # e.g. "final" or "checkpoint-5000"
+    tag = tag.strip().strip("[]")               # e.g. "final ★ best" or "checkpoint-3000 ★ best"
+    # Strip ★ annotation before resolving the path
+    tag = tag.replace(" ★ best", "").strip()
     if tag == "final":
         return root
     return root / tag
@@ -177,7 +200,9 @@ def build_ui() -> gr.Blocks:
         gr.Markdown(
             """
             # 🎙️ Whisper Nigerian Language — HF Model Tester
-            Test and compare fine-tuned `multilingual_whisper_hf` and `whisper-base-nigerian` models.
+            Test the fine-tuned `whisper-small-nigerian` model (Yoruba · Hausa · Igbo · Pidgin).
+            The **★ best** entry in the dropdown is the checkpoint with the lowest WER.
+            The **[final]** model always contains the best checkpoint weights.
             Upload an audio file **or** record from your microphone, then hit **Transcribe**.
             """
         )
@@ -193,7 +218,7 @@ def build_ui() -> gr.Blocks:
             with gr.Row():
                 model_dd = gr.Dropdown(
                     choices=MODEL_CHOICES,
-                    value=MODEL_CHOICES[0] if MODEL_CHOICES else None,
+                    value=BEST_MODEL_DEFAULT or (MODEL_CHOICES[0] if MODEL_CHOICES else None),
                     label="Model / Checkpoint",
                 )
                 lang_dd = gr.Dropdown(
@@ -228,7 +253,7 @@ def build_ui() -> gr.Blocks:
             with gr.Row():
                 cmp_model_a = gr.Dropdown(
                     choices=MODEL_CHOICES,
-                    value=MODEL_CHOICES[0] if len(MODEL_CHOICES) > 0 else None,
+                    value=BEST_MODEL_DEFAULT or (MODEL_CHOICES[0] if len(MODEL_CHOICES) > 0 else None),
                     label="Model A",
                 )
                 cmp_model_b = gr.Dropdown(
@@ -257,15 +282,25 @@ def build_ui() -> gr.Blocks:
                 if not root.exists():
                     info_lines.append(f"**{label}**: ❌ folder not found at `{root}`")
                     continue
+                best_info = _load_best_info(root)
                 ckpts = sorted(
                     [d.name for d in root.iterdir() if d.is_dir() and d.name.startswith("checkpoint-")],
                     key=lambda n: int(n.split("-")[1]),
                 )
+                best_step = best_info.get("best_step")
+                best_wer  = best_info.get("best_metric_wer")
+                ckpt_display = ", ".join(
+                    f"{c} ★" if best_step and c == f"checkpoint-{best_step}" else c
+                    for c in ckpts
+                ) if ckpts else "none"
                 info_lines.append(
                     f"**{label}**  \n"
                     f"Path: `{root}`  \n"
-                    f"Checkpoints: {', '.join(ckpts) if ckpts else 'none'}  \n"
-                    f"Final model: {'✅' if (root/'model.safetensors').exists() else '❌'}"
+                    f"Checkpoints: {ckpt_display}  \n"
+                    f"Final model: {'✅' if (root/'model.safetensors').exists() else '❌'}  \n"
+                    + (f"Best checkpoint: `checkpoint-{best_step}` — WER {best_wer:.2f}%  \n"
+                       f"*(final model contains best weights)*"
+                       if best_step else "")
                 )
             gr.Markdown("\n\n---\n\n".join(info_lines))
 

@@ -271,6 +271,7 @@ training_args = Seq2SeqTrainingArguments(
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
+    save_total_limit=2,          # keep only the 2 best checkpoints on disk
     push_to_hub=False,  # Set to True if you want to push to Hub
     dataloader_pin_memory=False,
 )
@@ -484,13 +485,36 @@ print("=" * 80)
 trainer.train()
 
 # ---------------------------------------------------------------------------
-# Save Final Model
+# Save Final Model  (load_best_model_at_end=True means this IS the best model)
 # ---------------------------------------------------------------------------
 
 print("\n" + "=" * 80)
 print("Training complete! Saving final model...")
 trainer.save_model(OUTPUT_DIR)
 processor.save_pretrained(OUTPUT_DIR)
+
+# Write a JSON record so Gradio (and humans) always know which checkpoint was best
+import json
+_best_ckpt = trainer.state.best_model_checkpoint   # e.g. "./whisper-small-nigerian/checkpoint-3000"
+_best_step = int(_best_ckpt.split("-")[-1]) if _best_ckpt else None
+_best_wer  = trainer.state.best_metric             # numeric WER value
+best_info  = {
+    "best_checkpoint": _best_ckpt,
+    "best_step": _best_step,
+    "best_metric_wer": round(float(_best_wer), 4) if _best_wer is not None else None,
+    "final_model_dir": str(Path(OUTPUT_DIR).resolve()),
+    "note": (
+        "The model saved to 'final_model_dir' contains the best checkpoint weights. "
+        "Load it with WhisperForConditionalGeneration.from_pretrained(final_model_dir)."
+    ),
+}
+_info_path = Path(OUTPUT_DIR) / "best_model_info.json"
+with open(_info_path, "w") as _f:
+    json.dump(best_info, _f, indent=2)
+print(f"\n✓ Best model info saved to: {_info_path}")
+if _best_wer is not None:
+    print(f"  Best checkpoint : {_best_ckpt}")
+    print(f"  Best WER        : {_best_wer:.2f}%")
 
 print("\nGenerating training graphs...")
 save_training_graphs_hf(trainer, Path(OUTPUT_DIR))
