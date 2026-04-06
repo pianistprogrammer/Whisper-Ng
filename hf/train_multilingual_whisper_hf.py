@@ -27,6 +27,16 @@ import os
 # The default PyTorch watermark blocks valid allocations long before the system is full.
 # Setting it to 0.0 removes the limit and lets macOS handle memory pressure naturally.
 os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
+
+def _get_device() -> str:
+    if torch.cuda.is_available():
+        return "cuda"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+DEVICE = _get_device()
+
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -119,6 +129,7 @@ print(f"Max steps   : {MAX_STEPS}  |  Eval every {EVAL_STEPS}  |  Save every {SA
 print(f"Batch size  : {BATCH_SIZE}  |  Grad accum: {GRADIENT_ACCUMULATION_STEPS}  "
       f"→  effective batch = {BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
 print(f"LR          : {LEARNING_RATE}  |  Warmup: {WARMUP_STEPS} steps")
+print(f"Device      : {DEVICE.upper()}")
 print()
 
 
@@ -251,7 +262,11 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 print("Loading pre-trained Whisper model...")
 model = WhisperForConditionalGeneration.from_pretrained(MODEL_NAME)
 model.config.use_cache = False
-model.gradient_checkpointing_enable()
+model = model.to(DEVICE)
+
+# gradient_checkpointing requires CUDA; skip on MPS/CPU to avoid errors
+if DEVICE == "cuda":
+    model.gradient_checkpointing_enable()
 
 # Multilingual mode — do NOT force a single language token
 model.generation_config.task = TASK
@@ -302,9 +317,9 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=LEARNING_RATE,
     warmup_steps=WARMUP_STEPS,
     max_steps=MAX_STEPS,
-    gradient_checkpointing=True,
-    fp16=torch.cuda.is_available(),           # CUDA only
-    bf16=torch.backends.mps.is_available(),   # Apple Silicon MPS — halves memory vs fp32
+    gradient_checkpointing=DEVICE == "cuda",  # not supported on MPS
+    fp16=DEVICE == "cuda",
+    bf16=False,                               # not supported by HF Trainer on MPS
     eval_strategy="steps",
     per_device_eval_batch_size=1,
     predict_with_generate=True,
