@@ -20,6 +20,7 @@ Outputs (all saved to OUTPUT_DIR):
 """
 
 import torch
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -39,6 +40,30 @@ from transformers import (
     Seq2SeqTrainingArguments,
     Seq2SeqTrainer,
 )
+
+# ---------------------------------------------------------------------------
+# Tee: mirror all stdout  to a timestamped log file
+# ---------------------------------------------------------------------------
+
+class _Tee:
+    """Write every print() call to both the terminal and a log file."""
+    def __init__(self, log_path: Path):
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        self._file = open(log_path, "w", buffering=1, encoding="utf-8")  # line-buffered
+        self._stdout = sys.stdout
+        sys.stdout = self
+
+    def write(self, data):
+        self._stdout.write(data)
+        self._file.write(data)
+
+    def flush(self):
+        self._stdout.flush()
+        self._file.flush()
+
+    def close(self):
+        sys.stdout = self._stdout
+        self._file.close()
 
 # ---------------------------------------------------------------------------
 # Config
@@ -62,6 +87,22 @@ SAMPLE_RATE = 16000
 
 # Trackio project — all runs from this script land in this project
 TRACKIO_PROJECT = "whisper-ng-nigerian"
+
+# ---------------------------------------------------------------------------
+# Start logging — everything printed from here on goes to terminal + log file
+# ---------------------------------------------------------------------------
+
+_RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
+_LOG_PATH = Path(OUTPUT_DIR) / f"training_log_{_RUN_TIMESTAMP}.txt"
+_tee = _Tee(_LOG_PATH)
+print(f"Training log: {_LOG_PATH.resolve()}")
+print(f"Run started : {_RUN_TIMESTAMP}")
+print(f"Model       : {MODEL_NAME}")
+print(f"Max steps   : {MAX_STEPS}  |  Eval every {EVAL_STEPS}  |  Save every {SAVE_STEPS}")
+print(f"Batch size  : {BATCH_SIZE}  |  Grad accum: {GRADIENT_ACCUMULATION_STEPS}  "
+      f"→  effective batch = {BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
+print(f"LR          : {LEARNING_RATE}  |  Warmup: {WARMUP_STEPS} steps")
+print()
 
 # Training hyperparameters
 BATCH_SIZE = 1
@@ -302,6 +343,25 @@ class UnfreezeEncoderCallback(TrainerCallback):
             self._unfrozen = True
             print(f"\n✓ Encoder unfrozen at step {state.global_step}", flush=True)
 
+
+class StepLoggerCallback(TrainerCallback):
+    """Write one structured line per logging/eval event to stdout (captured by _Tee)."""
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if not logs:
+            return
+        step = state.global_step
+        parts = [f"step={step:>5}"]
+        for key in ["loss", "learning_rate", "grad_norm",
+                    "eval_loss", "eval_wer",
+                    "train_runtime", "train_samples_per_second", "train_steps_per_second"]:
+            if key in logs:
+                val = logs[key]
+                if isinstance(val, float):
+                    parts.append(f"{key}={val:.6g}")
+                else:
+                    parts.append(f"{key}={val}")
+        print("  ".join(parts), flush=True)
+
 print("Initializing trainer...")
 data_collator = DataCollatorSpeechSeq2SeqWithPadding(
     processor=processor,
@@ -315,7 +375,10 @@ trainer = Seq2SeqTrainer(
     eval_dataset=common_voice["test"],
     data_collator=data_collator,
     compute_metrics=compute_metrics,
-    callbacks=[UnfreezeEncoderCallback(unfreeze_at=MAX_STEPS // 2)],
+    callbacks=[
+        UnfreezeEncoderCallback(unfreeze_at=MAX_STEPS // 2),
+        StepLoggerCallback(),
+    ],
 )
 
 # ---------------------------------------------------------------------------
@@ -532,3 +595,7 @@ print(f'processor = WhisperProcessor.from_pretrained("{OUTPUT_DIR}")')
 print("\nLanguages fine-tuned on: Yoruba, Hausa, Igbo, Pidgin English")
 print(f"\nView training dashboard:")
 print(f"  trackio show --project {TRACKIO_PROJECT}")
+
+# Close the log file cleanly
+_tee.close()
+print(f"\nFull training log saved to: {_LOG_PATH.resolve()}")
