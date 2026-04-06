@@ -1,5 +1,5 @@
 """
-Fine-tuning OpenAI Whisper (base) on 4 Nigerian languages using Hugging Face Transformers.
+Fine-tuning OpenAI Whisper (small) on 4 Nigerian languages using Hugging Face Transformers.
 
 Languages:
   - Yoruba  (yor_tts)
@@ -44,7 +44,7 @@ from transformers import (
 # Config
 # ---------------------------------------------------------------------------
 
-MODEL_NAME = "openai/whisper-base"
+MODEL_NAME = "openai/whisper-small"
 DATASET_NAME = "google/WaxalNLP"
 TASK = "transcribe"
 
@@ -57,34 +57,17 @@ LANGUAGE_CONFIGS = [
 ]
 
 RANDOM_SEED = 42
-OUTPUT_DIR = "./whisper-base-nigerian"
+OUTPUT_DIR = "./whisper-small-nigerian"
 SAMPLE_RATE = 16000
 
-# ---------------------------------------------------------------------------
-# Training hyperparameters  (tuned for 4-language multilingual training)
-# ---------------------------------------------------------------------------
-# Effective batch size = BATCH_SIZE × GRADIENT_ACCUMULATION_STEPS
-# Currently: 4 × 8 = 32 — larger effective batch stabilises multilingual gradients
-BATCH_SIZE = 4
-GRADIENT_ACCUMULATION_STEPS = 8   # was 1 → effective batch 32 instead of 4
-
-# Slightly higher LR works better with the larger effective batch (linear scaling rule).
-# 1e-4 is the standard for Whisper fine-tuning; with warmup it won't diverge.
-LEARNING_RATE = 1e-4              # was 1e-5
-
-# Warmup should cover ~5-10 % of total steps.
-# With 20 000 steps → 1000 warmup = 5 %.
-WARMUP_STEPS = 1000               # was 500
-
-# 5 000 steps on 4 languages barely reached checkpoint-1000 level quality.
-# 20 000 steps ≈ 3-4 full passes over the ~6 000-sample combined training set
-# at effective batch 32, giving the model enough exposure to all 4 languages.
-MAX_STEPS = 20000                 # was 5000
-
-# Evaluate and checkpoint every 2 000 steps so we keep fine-grained snapshots.
-EVAL_STEPS  = 2000               # was 1000
-SAVE_STEPS  = 2000               # was 1000
-
+# Training hyperparameters
+BATCH_SIZE = 1
+GRADIENT_ACCUMULATION_STEPS = 16
+LEARNING_RATE = 1e-5
+WARMUP_STEPS = 500
+MAX_STEPS = 5000
+EVAL_STEPS = 1000
+SAVE_STEPS = 1000
 LOGGING_STEPS = 25
 SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
 
@@ -161,7 +144,7 @@ print("Preprocessing dataset...")
 common_voice = common_voice.map(
     prepare_dataset,
     remove_columns=common_voice.column_names["train"],
-    num_proc=4
+    num_proc=1
 )
 
 # ---------------------------------------------------------------------------
@@ -216,6 +199,8 @@ class DataCollatorSpeechSeq2SeqWithPadding:
 
 print("Loading pre-trained Whisper model...")
 model = WhisperForConditionalGeneration.from_pretrained(MODEL_NAME)
+model.config.use_cache = False
+model.gradient_checkpointing_enable()
 
 # Multilingual mode — do NOT force a single language token
 model.generation_config.task = TASK
@@ -272,12 +257,13 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=LEARNING_RATE,
     warmup_steps=WARMUP_STEPS,
     max_steps=MAX_STEPS,
-    gradient_checkpointing=False,  # Disabled due to compatibility issues
+    gradient_checkpointing=True,
     fp16=torch.cuda.is_available(),  # Use fp16 only if CUDA is available
+    bf16=False,
     eval_strategy="steps",
-    per_device_eval_batch_size=8,
+    per_device_eval_batch_size=1,
     predict_with_generate=True,
-    generation_max_length=225,
+    generation_max_length=128,
     save_steps=SAVE_STEPS,
     eval_steps=EVAL_STEPS,
     logging_steps=LOGGING_STEPS,
@@ -286,11 +272,7 @@ training_args = Seq2SeqTrainingArguments(
     metric_for_best_model="wer",
     greater_is_better=False,
     push_to_hub=False,  # Set to True if you want to push to Hub
-    # Regularisation: dropout and weight decay guard against over-fitting
-    # on a small ~6 000-sample multilingual dataset.
-    weight_decay=0.01,
-    # Keep only the 3 best checkpoints to save disk space.
-    save_total_limit=3,
+    dataloader_pin_memory=False,
 )
 
 # ---------------------------------------------------------------------------

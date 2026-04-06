@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fine-tuning OpenAI Whisper (base) on multiple Nigerian languages using MLX + LoRA.
+Fine-tuning OpenAI Whisper (small) on multiple Nigerian languages using MLX + LoRA.
 Combines 4 language datasets:
   - Yoruba (yor_tts)
   - Hausa (hau_tts)
@@ -56,8 +56,8 @@ except ImportError:
 # Config
 # ---------------------------------------------------------------------------
 
-MODEL_NAME        = "openai/whisper-base"
-MLX_MODEL_NAME    = "mlx-community/whisper-base-mlx"
+MODEL_NAME        = "openai/whisper-small"
+MLX_MODEL_NAME    = "mlx-community/whisper-small-mlx"
 DATASET_NAME      = "google/WaxalNLP"
 
 # Language configs to combine
