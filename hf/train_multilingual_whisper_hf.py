@@ -118,6 +118,10 @@ SAVE_STEPS = 1000
 LOGGING_STEPS = 25
 SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
 
+# Set to True to auto-resume from the latest checkpoint in OUTPUT_DIR,
+# or set to a specific path e.g. "./whisper-small-nigerian/checkpoint-250"
+RESUME_FROM_CHECKPOINT = False
+
 
 _RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 _LOG_PATH = Path(OUTPUT_DIR) / f"training_log_{_RUN_TIMESTAMP}.txt"
@@ -130,6 +134,8 @@ print(f"Batch size  : {BATCH_SIZE}  |  Grad accum: {GRADIENT_ACCUMULATION_STEPS}
       f"→  effective batch = {BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
 print(f"LR          : {LEARNING_RATE}  |  Warmup: {WARMUP_STEPS} steps")
 print(f"Device      : {DEVICE.upper()}")
+if RESUME_FROM_CHECKPOINT:
+    print(f"Resuming    : {RESUME_FROM_CHECKPOINT}")
 print()
 
 
@@ -552,7 +558,7 @@ def save_training_graphs_hf(trainer, output_dir: Path):
 
 print("\nStarting training...\n")
 print("=" * 80)
-trainer.train()
+trainer.train(resume_from_checkpoint=RESUME_FROM_CHECKPOINT or None)
 
 # ---------------------------------------------------------------------------
 # Save Final Model  (load_best_model_at_end=True means this IS the best model)
