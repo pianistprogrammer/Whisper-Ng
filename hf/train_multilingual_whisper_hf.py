@@ -91,6 +91,17 @@ TRACKIO_PROJECT = "whisper-ng-nigerian"
 # ---------------------------------------------------------------------------
 # Start logging — everything printed from here on goes to terminal + log file
 # ---------------------------------------------------------------------------
+# Training hyperparameters
+BATCH_SIZE = 1
+GRADIENT_ACCUMULATION_STEPS = 16
+LEARNING_RATE = 5e-6
+WARMUP_STEPS = 500
+MAX_STEPS = 5000
+EVAL_STEPS = 1000
+SAVE_STEPS = 1000
+LOGGING_STEPS = 25
+SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
+
 
 _RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 _LOG_PATH = Path(OUTPUT_DIR) / f"training_log_{_RUN_TIMESTAMP}.txt"
@@ -104,16 +115,6 @@ print(f"Batch size  : {BATCH_SIZE}  |  Grad accum: {GRADIENT_ACCUMULATION_STEPS}
 print(f"LR          : {LEARNING_RATE}  |  Warmup: {WARMUP_STEPS} steps")
 print()
 
-# Training hyperparameters
-BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 16
-LEARNING_RATE = 1e-5
-WARMUP_STEPS = 500
-MAX_STEPS = 5000
-EVAL_STEPS = 1000
-SAVE_STEPS = 1000
-LOGGING_STEPS = 25
-SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
 
 # ---------------------------------------------------------------------------
 # Load Feature Extractor, Tokenizer and Processor
@@ -250,13 +251,7 @@ model.gradient_checkpointing_enable()
 model.generation_config.task = TASK
 model.generation_config.forced_decoder_ids = None
 model.generation_config.language = None
-
-# Freeze encoder for the first half of training.
-# The encoder already has strong audio representations from OpenAI pre-training.
-# Unfreezing it too early on a small dataset causes catastrophic forgetting.
-# We freeze it globally; a callback below unfreezes it at step MAX_STEPS // 2.
-model.freeze_encoder()
-print(f"Encoder frozen for first {MAX_STEPS // 2} steps, then unfreezes.")
+print("Full model (encoder + decoder) will be fine-tuned from step 1.")
 
 # ---------------------------------------------------------------------------
 # Evaluation Metrics
@@ -330,19 +325,6 @@ training_args = Seq2SeqTrainingArguments(
 # once the decoder is already learning the target languages.
 from transformers import TrainerCallback
 
-class UnfreezeEncoderCallback(TrainerCallback):
-    """Unfreeze the Whisper encoder after MAX_STEPS // 2 steps."""
-    def __init__(self, unfreeze_at: int):
-        self.unfreeze_at = unfreeze_at
-        self._unfrozen = False
-
-    def on_step_begin(self, args, state, control, model=None, **kwargs):
-        if not self._unfrozen and state.global_step >= self.unfreeze_at:
-            for param in model.model.encoder.parameters():
-                param.requires_grad = True
-            self._unfrozen = True
-            print(f"\n✓ Encoder unfrozen at step {state.global_step}", flush=True)
-
 
 class StepLoggerCallback(TrainerCallback):
     """Write one structured line per logging/eval event to stdout (captured by _Tee)."""
@@ -376,7 +358,6 @@ trainer = Seq2SeqTrainer(
     data_collator=data_collator,
     compute_metrics=compute_metrics,
     callbacks=[
-        UnfreezeEncoderCallback(unfreeze_at=MAX_STEPS // 2),
         StepLoggerCallback(),
     ],
 )
