@@ -21,6 +21,12 @@ Outputs (all saved to OUTPUT_DIR):
 
 import torch
 import sys
+import os
+
+# Apple Silicon: MPS unified memory is managed by the OS.
+# The default PyTorch watermark blocks valid allocations long before the system is full.
+# Setting it to 0.0 removes the limit and lets macOS handle memory pressure naturally.
+os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -297,8 +303,8 @@ training_args = Seq2SeqTrainingArguments(
     warmup_steps=WARMUP_STEPS,
     max_steps=MAX_STEPS,
     gradient_checkpointing=True,
-    fp16=torch.cuda.is_available(),  # Use fp16 only if CUDA is available
-    bf16=False,
+    fp16=torch.cuda.is_available(),           # CUDA only
+    bf16=torch.backends.mps.is_available(),   # Apple Silicon MPS — halves memory vs fp32
     eval_strategy="steps",
     per_device_eval_batch_size=1,
     predict_with_generate=True,
