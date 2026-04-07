@@ -22,6 +22,7 @@ Outputs (all saved to OUTPUT_DIR):
 import torch
 import sys
 import os
+import gc
 
 # Apple Silicon: MPS unified memory is managed by the OS.
 # The default PyTorch watermark blocks valid allocations long before the system is full.
@@ -108,8 +109,8 @@ TRACKIO_PROJECT = "whisper-ng-nigerian"
 # Start logging — everything printed from here on goes to terminal + log file
 # ---------------------------------------------------------------------------
 # Training hyperparameters
-BATCH_SIZE = 8  # Increased from 1 (M4 Pro 48GB can handle this easily)
-GRADIENT_ACCUMULATION_STEPS = 2  # Reduced from 16 (effective batch still 16)
+BATCH_SIZE = 16  # Increased from 1 (M4 Pro 48GB can handle this easily)
+GRADIENT_ACCUMULATION_STEPS = 1 # Reduced from 16 (effective batch still 16)
 LEARNING_RATE = 1e-5  # Keep the reduced LR that worked well
 WARMUP_STEPS = 500
 MAX_STEPS = 4000  # Stop at best checkpoint (was 5000, overfit after this)
@@ -180,6 +181,11 @@ common_voice = DatasetDict()
 common_voice["train"] = concatenate_datasets([combined_train, combined_val]).shuffle(seed=RANDOM_SEED)
 common_voice["test"]  = combined_test
 
+# Free the per-language lists and intermediate datasets — they are no longer needed
+# and keeping them alive doubles RAM usage during the map() step.
+del all_train, all_val, all_test, combined_train, combined_val, combined_test
+gc.collect()
+
 # ---------------------------------------------------------------------------
 # Prepare Data
 # ---------------------------------------------------------------------------
@@ -214,6 +220,8 @@ common_voice = common_voice.map(
     remove_columns=common_voice.column_names["train"],
     num_proc=1
 )
+# Release any remaining in-memory audio arrays now that features are cached to disk
+gc.collect()
 
 # ---------------------------------------------------------------------------
 # Data Collator
