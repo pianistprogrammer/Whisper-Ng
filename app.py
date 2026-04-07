@@ -7,11 +7,7 @@ Run:
     streamlit run app.py
 
 If using a local checkpoint, first run:
-<<<<<<< HEAD
     python fix_checkpoint.py multilingual_whisper_hf/checkpoint-1000
-=======
-    python fix_checkpoint.py mutltilingual_whisper_hf/checkpoint-1000
->>>>>>> 96a8e6f (Refactor code structure for improved readability and maintainability)
 """
 
 import time
@@ -31,11 +27,7 @@ from transformers import WhisperProcessor, WhisperForConditionalGeneration
 
 SAMPLE_RATE = 16000
 
-<<<<<<< HEAD
 DEFAULT_HF_CHECKPOINT  = "multilingual_whisper_hf/checkpoint-1000"
-=======
-DEFAULT_HF_CHECKPOINT  = "mutltilingual_whisper_hf/checkpoint-1000"
->>>>>>> 96a8e6f (Refactor code structure for improved readability and maintainability)
 FALLBACK_MODEL         = "openai/whisper-small"
 DEFAULT_MLX_MODEL      = "mlx-community/whisper-small-mlx"
 DEFAULT_MLX_ADAPTERS   = "multilingual_whisper_lora"
@@ -109,7 +101,6 @@ def transcribe_mlx(
     ModelHolder.model = model
     ModelHolder.model_path = cache_key
 
-<<<<<<< HEAD
     decode_opts: dict = {
         "task": "transcribe",
         "fp16": False,                        # adapters saved as float32
@@ -119,9 +110,6 @@ def transcribe_mlx(
         "logprob_threshold": -0.8,            # fail fast when model is uncertain
         "no_speech_threshold": 0.5,
     }
-=======
-    decode_opts: dict = {"task": "transcribe", "fp16": False}  # adapters saved as float32
->>>>>>> c1ec0ec (Implement code changes to enhance functionality and improve performance)
     if language_code:
         decode_opts["language"] = language_code
 
@@ -316,11 +304,7 @@ def main():
                 st.error(
                     f"**Failed to load model:** {e}\n\n"
                     "If using a local checkpoint, run:\n"
-<<<<<<< HEAD
                     "```\npython fix_checkpoint.py multilingual_whisper_hf/checkpoint-1000\n```",
-=======
-                    "```\npython fix_checkpoint.py mutltilingual_whisper_hf/checkpoint-1000\n```",
->>>>>>> 96a8e6f (Refactor code structure for improved readability and maintainability)
                 )
                 st.stop()
 

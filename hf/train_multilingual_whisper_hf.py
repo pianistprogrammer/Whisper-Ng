@@ -108,11 +108,11 @@ TRACKIO_PROJECT = "whisper-ng-nigerian"
 # Start logging — everything printed from here on goes to terminal + log file
 # ---------------------------------------------------------------------------
 # Training hyperparameters
-BATCH_SIZE = 1
-GRADIENT_ACCUMULATION_STEPS = 16
-LEARNING_RATE = 5e-6
+BATCH_SIZE = 8  # Increased from 1 (M4 Pro 48GB can handle this easily)
+GRADIENT_ACCUMULATION_STEPS = 2  # Reduced from 16 (effective batch still 16)
+LEARNING_RATE = 1e-5  # Keep the reduced LR that worked well
 WARMUP_STEPS = 500
-MAX_STEPS = 5000
+MAX_STEPS = 4000  # Stop at best checkpoint (was 5000, overfit after this)
 EVAL_STEPS = 1000
 SAVE_STEPS = 1000
 LOGGING_STEPS = 25

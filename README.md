@@ -44,12 +44,7 @@ python train_yoruba_whisper_mlx.py
 ```bash
 python train_yoruba_whisper_hf.py
 ```
-<<<<<<< HEAD
-
 - Outputs: `multilingual_whisper_hf/` checkpoint directory, tensorboard logs
-=======
-- Outputs: `mutltilingual_whisper_hf/` checkpoint directory, tensorboard logs
->>>>>>> 96a8e6f (Refactor code structure for improved readability and maintainability)
 
 ## Configuration
 
@@ -133,12 +128,7 @@ EVAL_STEPS = 1000
 - `yoruba_whisper_lora/wer_cer.png` - Evaluation metrics
 
 ### HF
-<<<<<<< HEAD
-
-- `multilingual_whisper_hf/` - Full model checkpoint
-=======
 - `mutltilingual_whisper_hf/` - Full model checkpoint
->>>>>>> 96a8e6f (Refactor code structure for improved readability and maintainability)
 - `runs/` - Tensorboard logs
 
 ## References
