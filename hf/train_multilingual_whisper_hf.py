@@ -23,6 +23,10 @@ import torch
 import sys
 import os
 import gc
+import multiprocessing as mp
+
+if os.name == "nt":
+    mp.freeze_support()
 
 # Apple Silicon: MPS unified memory is managed by the OS.
 # The default PyTorch watermark blocks valid allocations long before the system is full.
@@ -37,6 +41,13 @@ def _get_device() -> str:
     return "cpu"
 
 DEVICE = _get_device()
+
+# CUDA performance knobs: allow TF32 kernels and autotune cuDNN for fixed-shape workloads.
+if DEVICE == "cuda":
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True
+    torch.set_float32_matmul_precision("high")
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -118,6 +129,15 @@ EVAL_STEPS = 1000
 SAVE_STEPS = 1000
 LOGGING_STEPS = 25
 SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
+IS_WINDOWS = os.name == "nt"
+# In Hugging Face Datasets, num_proc=1 still spins up a process pool.
+# Use None for true single-process mode on Windows to avoid spawn errors.
+PREPROCESS_NUM_PROC = None if IS_WINDOWS else max(1, min(8, (os.cpu_count() or 1) - 1))
+
+# Prefer bf16 on newer GPUs when available; otherwise fall back to fp16 on CUDA.
+USE_BF16 = DEVICE == "cuda" and torch.cuda.is_bf16_supported()
+USE_FP16 = DEVICE == "cuda" and not USE_BF16
+DATALOADER_NUM_WORKERS = 0 if IS_WINDOWS else (2 if DEVICE == "cuda" else 0)
 
 # Set to True to auto-resume from the latest checkpoint in OUTPUT_DIR,
 # or set to a specific path e.g. "./whisper-small-nigerian/checkpoint-250"
@@ -135,6 +155,13 @@ print(f"Batch size  : {BATCH_SIZE}  |  Grad accum: {GRADIENT_ACCUMULATION_STEPS}
       f"→  effective batch = {BATCH_SIZE * GRADIENT_ACCUMULATION_STEPS}")
 print(f"LR          : {LEARNING_RATE}  |  Warmup: {WARMUP_STEPS} steps")
 print(f"Device      : {DEVICE.upper()}")
+if IS_WINDOWS and PREPROCESS_NUM_PROC is None:
+    print("Workers     : Windows-safe mode (num_proc=None, dataloader workers=0)")
+if DEVICE == "cuda":
+    gpu_name = torch.cuda.get_device_name(0)
+    total_vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024 ** 3)
+    print(f"GPU         : {gpu_name}  |  VRAM: {total_vram_gb:.1f} GB")
+    print(f"Precision   : {'BF16' if USE_BF16 else 'FP16'}  |  TF32: ON")
 if RESUME_FROM_CHECKPOINT:
     print(f"Resuming    : {RESUME_FROM_CHECKPOINT}")
 print()
@@ -218,7 +245,7 @@ print("Preprocessing dataset...")
 common_voice = common_voice.map(
     prepare_dataset,
     remove_columns=common_voice.column_names["train"],
-    num_proc=1
+    num_proc=PREPROCESS_NUM_PROC,
 )
 # Release any remaining in-memory audio arrays now that features are cached to disk
 gc.collect()
@@ -332,8 +359,9 @@ training_args = Seq2SeqTrainingArguments(
     warmup_steps=WARMUP_STEPS,
     max_steps=MAX_STEPS,
     gradient_checkpointing=DEVICE == "cuda",  # not supported on MPS
-    fp16=DEVICE == "cuda",
-    bf16=False,                               # not supported by HF Trainer on MPS
+    fp16=USE_FP16,
+    bf16=USE_BF16,
+    optim="adamw_torch_fused" if DEVICE == "cuda" else "adamw_torch",
     eval_strategy="steps",
     per_device_eval_batch_size=1,
     predict_with_generate=True,
@@ -348,7 +376,9 @@ training_args = Seq2SeqTrainingArguments(
     greater_is_better=False,
     save_total_limit=2,          # keep only the 2 best checkpoints on disk
     push_to_hub=False,  # Set to True if you want to push to Hub
-    dataloader_pin_memory=False,
+    dataloader_pin_memory=DEVICE == "cuda",
+    dataloader_num_workers=DATALOADER_NUM_WORKERS,
+    dataloader_persistent_workers=DATALOADER_NUM_WORKERS > 0,
 )
 
 # ---------------------------------------------------------------------------
