@@ -4,6 +4,7 @@ yoruba_whisper_lora/
 test_output_3samples/
 multilingual_whisper_lora/
 whisper-base-nigerian/
+whisper-small-nigerian-mozilla/
 
 # whisper-small-nigerian: track small config/log files, ignore large data
 whisper-small-nigerian/checkpoint-*/
@@ -42,3 +43,13 @@ env/
 # OS
 .DS_Store
 .claude/
+
+# Datasets - Mozilla and other large datasets
+datasets/
+mozilla_cache/
+*.tar.gz
+*.zip
+
+# Environment variables and secrets
+.env
+.env.local
