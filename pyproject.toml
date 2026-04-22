@@ -23,6 +23,8 @@ dependencies = [
     "torch>=2.5.0",
     "torchaudio>=2.5.0",
     "torchvision>=0.20.0",
+    "bitsandbytes>=0.49.2",
+    "peft>=0.19.1",
 ]
 
 [project.optional-dependencies]

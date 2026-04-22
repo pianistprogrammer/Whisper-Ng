@@ -5,6 +5,7 @@ test_output_3samples/
 multilingual_whisper_lora/
 whisper-base-nigerian/
 whisper-small-nigerian/
+whisper-small-nigerian-lora/
 # Generic catch-all for any future checkpoint / output dirs
 hf/whisper-*/
 hf/multilingual_*/

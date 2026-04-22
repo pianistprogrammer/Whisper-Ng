@@ -1,28 +1,9 @@
-"""
-Fine-tuning OpenAI Whisper (small) on 4 Nigerian languages using Hugging Face Transformers.
-
-Languages:
-  - Yoruba  (yor_tts)
-  - Hausa   (hau_tts)
-  - Igbo    (ibo_tts)
-  - Pidgin English (pcm_tts)
-
-Requirements:
-    pip install transformers datasets accelerate evaluate jiwer tensorboard
-
-Run:
-    python train_yoruba_whisper_hf.py
-
-Outputs (all saved to OUTPUT_DIR):
-    - Model checkpoints
-    - Training logs
-    - Evaluation metrics
-"""
-
+import trackio
 import torch
 import sys
 import os
 import gc
+import re
 import multiprocessing as mp
 
 if os.name == "nt":
@@ -67,10 +48,11 @@ from transformers import (
     WhisperForConditionalGeneration,
     Seq2SeqTrainingArguments,
     Seq2SeqTrainer,
+    TrainerCallback
 )
 
 # ---------------------------------------------------------------------------
-# Tee: mirror all stdout  to a timestamped log file
+# Tee: mirror all stdout to a timestamped log file
 # ---------------------------------------------------------------------------
 
 class _Tee:
@@ -102,10 +84,10 @@ DATASET_NAME = "google/WaxalNLP"
 TASK = "transcribe"
 
 # All 4 Nigerian language configs to combine
-LANGUAGE_CONFIGS = [
+LANGUAGE_CONFIGS =[
     {"config": "yor_tts", "language": "yoruba"},
     {"config": "hau_tts", "language": "hausa"},
-    {"config": "ibo_tts", "language": "igbo"},
+    {"config": "ibo_tts", "language": "swahili"},  # Igbo not natively supported, fallback to swahili token
     {"config": "pcm_tts", "language": "english"},  # Pidgin uses English tokenizer
 ]
 
@@ -117,32 +99,27 @@ SAMPLE_RATE = 16000
 TRACKIO_PROJECT = "whisper-ng-nigerian"
 
 # ---------------------------------------------------------------------------
-# Start logging — everything printed from here on goes to terminal + log file
+# Start logging
 # ---------------------------------------------------------------------------
-# Training hyperparameters
-BATCH_SIZE = 16  # Increased from 1 (M4 Pro 48GB can handle this easily)
-GRADIENT_ACCUMULATION_STEPS = 1 # Reduced from 16 (effective batch still 16)
-LEARNING_RATE = 1e-5  # Keep the reduced LR that worked well
+
+BATCH_SIZE = 16
+GRADIENT_ACCUMULATION_STEPS = 1
+LEARNING_RATE = 1e-5
 WARMUP_STEPS = 500
-MAX_STEPS = 4000  # Stop at best checkpoint (was 5000, overfit after this)
+MAX_STEPS = 4000
 EVAL_STEPS = 1000
 SAVE_STEPS = 1000
 LOGGING_STEPS = 25
-SMOOTH_WINDOW = 10   # window for rolling-average overlay on the step-loss plot
+SMOOTH_WINDOW = 10
 IS_WINDOWS = os.name == "nt"
-# In Hugging Face Datasets, num_proc=1 still spins up a process pool.
-# Use None for true single-process mode on Windows to avoid spawn errors.
+
 PREPROCESS_NUM_PROC = None if IS_WINDOWS else max(1, min(8, (os.cpu_count() or 1) - 1))
 
-# Prefer bf16 on newer GPUs when available; otherwise fall back to fp16 on CUDA.
 USE_BF16 = DEVICE == "cuda" and torch.cuda.is_bf16_supported()
 USE_FP16 = DEVICE == "cuda" and not USE_BF16
 DATALOADER_NUM_WORKERS = 0 if IS_WINDOWS else (2 if DEVICE == "cuda" else 0)
 
-# Set to True to auto-resume from the latest checkpoint in OUTPUT_DIR,
-# or set to a specific path e.g. "./whisper-small-nigerian/checkpoint-250"
 RESUME_FROM_CHECKPOINT = False
-
 
 _RUN_TIMESTAMP = datetime.now().strftime("%Y%m%d_%H%M%S")
 _LOG_PATH = Path(OUTPUT_DIR) / f"training_log_{_RUN_TIMESTAMP}.txt"
@@ -166,7 +143,6 @@ if RESUME_FROM_CHECKPOINT:
     print(f"Resuming    : {RESUME_FROM_CHECKPOINT}")
 print()
 
-
 # ---------------------------------------------------------------------------
 # Load Feature Extractor, Tokenizer and Processor
 # ---------------------------------------------------------------------------
@@ -177,17 +153,56 @@ tokenizer = WhisperTokenizer.from_pretrained(MODEL_NAME, task=TASK)
 processor = WhisperProcessor.from_pretrained(MODEL_NAME, task=TASK)
 
 # ---------------------------------------------------------------------------
-# Load and Prepare Dataset — all 4 languages
+# Prepare Dataset Function
 # ---------------------------------------------------------------------------
 
-print("Loading datasets for all 4 languages...")
-all_train, all_val, all_test = [], [], []
+def prepare_dataset(batch, language):
+    """Prepare a single batch for training, explicitly using the specified language."""
+    audio = batch["audio"]
+
+    # Compute log-Mel input features
+    batch["input_features"] = feature_extractor(
+        audio["array"],
+        sampling_rate=audio["sampling_rate"]
+    ).input_features[0]
+
+    # FIX 1: Explicitly set the language for the tokenizer so it adds the right tokens 
+    # (e.g., <|startoftranscript|><|yo|><|transcribe|><|notimestamps|>)
+    tokenizer.set_prefix_tokens(language=language, task=TASK)
+    
+    max_label_length = 448
+    labels = tokenizer(
+        batch["text"], 
+        add_special_tokens=True,
+        truncation=True,
+        max_length=max_label_length
+    ).input_ids
+
+    batch["labels"] = labels
+    return batch
+
+# ---------------------------------------------------------------------------
+# Load, Map, and Combine Datasets
+# ---------------------------------------------------------------------------
+
+print("Loading and preprocessing datasets for all 4 languages...")
+all_train, all_val, all_test = [], [],[]
 
 for lang_cfg in LANGUAGE_CONFIGS:
     cfg, lang = lang_cfg["config"], lang_cfg["language"]
-    print(f"  Loading {lang.upper()} ({cfg})...", flush=True)
+    print(f"  Processing {lang.upper()} ({cfg})...", flush=True)
+    
     ds = load_dataset(DATASET_NAME, cfg)
     ds = ds.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+    
+    # Map each dataset *before* concatenating so we can supply the proper language flag
+    ds = ds.map(
+        prepare_dataset,
+        fn_kwargs={"language": lang},
+        remove_columns=ds["train"].column_names,
+        num_proc=PREPROCESS_NUM_PROC,
+    )
+    
     print(f"    train={len(ds['train']):,}  val={len(ds['validation']):,}  test={len(ds['test']):,}")
     all_train.append(ds["train"])
     all_val.append(ds["validation"])
@@ -202,52 +217,12 @@ print(f"  Combined train : {len(combined_train):,}")
 print(f"  Combined val   : {len(combined_val):,}")
 print(f"  Combined test  : {len(combined_test):,}")
 
-# Use train + val for training (maximise data), test for evaluation
-print("\nBuilding final DatasetDict...")
+# Train on train+val to maximize data, evaluate on test
 common_voice = DatasetDict()
 common_voice["train"] = concatenate_datasets([combined_train, combined_val]).shuffle(seed=RANDOM_SEED)
 common_voice["test"]  = combined_test
 
-# Free the per-language lists and intermediate datasets — they are no longer needed
-# and keeping them alive doubles RAM usage during the map() step.
 del all_train, all_val, all_test, combined_train, combined_val, combined_test
-gc.collect()
-
-# ---------------------------------------------------------------------------
-# Prepare Data
-# ---------------------------------------------------------------------------
-
-def prepare_dataset(batch):
-    """Prepare a single batch for training."""
-    # Load and resample audio
-    audio = batch["audio"]
-
-    # Compute log-Mel input features from input audio array
-    batch["input_features"] = feature_extractor(
-        audio["array"],
-        sampling_rate=audio["sampling_rate"]
-    ).input_features[0]
-
-    # FIX: Add special tokens (Whisper decoder prompts like <|startoftranscript|>)
-    labels = tokenizer(batch["text"], add_special_tokens=True).input_ids
-
-    # Truncate labels to max length (448 tokens for Whisper base decoder)
-    # This prevents indexing errors during training
-    max_label_length = 448
-    if len(labels) > max_label_length:
-        labels = labels[:max_label_length]
-
-    batch["labels"] = labels
-
-    return batch
-
-print("Preprocessing dataset...")
-common_voice = common_voice.map(
-    prepare_dataset,
-    remove_columns=common_voice.column_names["train"],
-    num_proc=PREPROCESS_NUM_PROC,
-)
-# Release any remaining in-memory audio arrays now that features are cached to disk
 gc.collect()
 
 # ---------------------------------------------------------------------------
@@ -262,16 +237,10 @@ class DataCollatorSpeechSeq2SeqWithPadding:
     def __call__(
         self, features: List[Dict[str, Union[List[int], torch.Tensor]]]
     ) -> Dict[str, torch.Tensor]:
-        # Split inputs and labels since they have different lengths and need
-        # different padding methods
-
-        # First treat the audio inputs by simply returning torch tensors
         input_features = [{"input_features": feature["input_features"]} for feature in features]
         batch = self.processor.feature_extractor.pad(input_features, return_tensors="pt")
 
-        # Get the tokenized label sequences
         label_features = [{"input_ids": feature["labels"]} for feature in features]
-        # Pad the labels to max length
         labels_batch = self.processor.tokenizer.pad(label_features, return_tensors="pt")
 
         # Replace padding with -100 to ignore loss correctly
@@ -279,16 +248,11 @@ class DataCollatorSpeechSeq2SeqWithPadding:
             labels_batch.attention_mask.ne(1), -100
         )
 
-        # If bos token is appended in previous tokenization step,
-        # cut bos token here as it's append later anyways
         if (labels[:, 0] == self.decoder_start_token_id).all().cpu().item():
             labels = labels[:, 1:]
 
         batch["labels"] = labels
         
-        # FIX: Explicitly set decoder_attention_mask
-        # This fixes the warning: "attention mask is not set and cannot be inferred"
-        # Especially important because pad_token_id == eos_token_id
         decoder_attention_mask = labels_batch.attention_mask
         if (labels_batch["input_ids"][:, 0] == self.decoder_start_token_id).all().cpu().item():
             decoder_attention_mask = decoder_attention_mask[:, 1:]
@@ -305,11 +269,9 @@ model = WhisperForConditionalGeneration.from_pretrained(MODEL_NAME)
 model.config.use_cache = False
 model = model.to(DEVICE)
 
-# gradient_checkpointing requires CUDA; skip on MPS/CPU to avoid errors
 if DEVICE == "cuda":
     model.gradient_checkpointing_enable()
 
-# Multilingual mode — do NOT force a single language token
 model.generation_config.task = TASK
 model.generation_config.forced_decoder_ids = None
 model.generation_config.language = None
@@ -331,20 +293,38 @@ except AttributeError:
 
     metric = WERMetric()
 
+# FIX 2: Text normalization function
+def normalize_text(text):
+    """Lowercases text and removes punctuation to ensure fair WER calculation."""
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    return text.strip()
+
 def compute_metrics(pred):
-    """Compute WER metric."""
+    """Compute WER metric using normalized text."""
     pred_ids = pred.predictions
     label_ids = pred.label_ids
 
-    # Replace -100 with the pad_token_id
     label_ids[label_ids == -100] = tokenizer.pad_token_id
 
-    # We do not want to group tokens when computing the metrics
     pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
 
-    wer = 100 * metric.compute(predictions=pred_str, references=label_str)
+    # Apply text normalization to both predictions and targets
+    pred_str =[normalize_text(p) for p in pred_str]
+    label_str = [normalize_text(l) for l in label_str]
 
+    # Filter out any totally empty references to avoid division by zero
+    valid_preds, valid_labels = [],[]
+    for p, l in zip(pred_str, label_str):
+        if len(l) > 0:
+            valid_preds.append(p)
+            valid_labels.append(l)
+
+    if len(valid_labels) == 0:
+        return {"wer": 0.0}
+
+    wer = 100 * metric.compute(predictions=valid_preds, references=valid_labels)
     return {"wer": wer}
 
 # ---------------------------------------------------------------------------
@@ -358,7 +338,7 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=LEARNING_RATE,
     warmup_steps=WARMUP_STEPS,
     max_steps=MAX_STEPS,
-    gradient_checkpointing=DEVICE == "cuda",  # not supported on MPS
+    gradient_checkpointing=DEVICE == "cuda", 
     fp16=USE_FP16,
     bf16=USE_BF16,
     optim="adamw_torch_fused" if DEVICE == "cuda" else "adamw_torch",
@@ -374,8 +354,8 @@ training_args = Seq2SeqTrainingArguments(
     load_best_model_at_end=True,
     metric_for_best_model="wer",
     greater_is_better=False,
-    save_total_limit=2,          # keep only the 2 best checkpoints on disk
-    push_to_hub=False,  # Set to True if you want to push to Hub
+    save_total_limit=2,
+    push_to_hub=False,
     dataloader_pin_memory=DEVICE == "cuda",
     dataloader_num_workers=DATALOADER_NUM_WORKERS,
     dataloader_persistent_workers=DATALOADER_NUM_WORKERS > 0,
@@ -385,19 +365,17 @@ training_args = Seq2SeqTrainingArguments(
 # Initialize Trainer
 # ---------------------------------------------------------------------------
 
-# Unfreeze encoder halfway through training so the full model can adapt
-# once the decoder is already learning the target languages.
-from transformers import TrainerCallback
-
-
 class StepLoggerCallback(TrainerCallback):
     """Write one structured line per logging/eval event to stdout (captured by _Tee)."""
     def on_log(self, args, state, control, logs=None, **kwargs):
         if not logs:
             return
+            
+        trackio.log(logs)
+        
         step = state.global_step
-        parts = [f"step={step:>5}"]
-        for key in ["loss", "learning_rate", "grad_norm",
+        parts =[f"step={step:>5}"]
+        for key in["loss", "learning_rate", "grad_norm",
                     "eval_loss", "eval_wer",
                     "train_runtime", "train_samples_per_second", "train_steps_per_second"]:
             if key in logs:
@@ -427,10 +405,6 @@ trainer = Seq2SeqTrainer(
 )
 
 # ---------------------------------------------------------------------------
-# Training
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
 # Training Graphs
 # ---------------------------------------------------------------------------
 
@@ -441,27 +415,26 @@ def save_training_graphs_hf(trainer, output_dir: Path):
     graphs_dir.mkdir(parents=True, exist_ok=True)
 
     log_history = trainer.state.log_history
-    train_logs  = [e for e in log_history if "loss" in e and "eval_loss" not in e]
-    eval_logs   = [e for e in log_history if "eval_loss" in e]
+    train_logs  =[e for e in log_history if "loss" in e and "eval_loss" not in e]
+    eval_logs   =[e for e in log_history if "eval_loss" in e]
 
     if not train_logs:
         print("  No training logs found — skipping graphs.")
         return
 
-    step_numbers = [e["step"]  for e in train_logs]
+    step_numbers =[e["step"]  for e in train_logs]
     step_losses  = [e["loss"]  for e in train_logs]
     eval_steps   = [e["step"]      for e in eval_logs]
     eval_losses  = [e["eval_loss"] for e in eval_logs]
     eval_wers    = [e.get("eval_wer") for e in eval_logs]
 
-    # Pre-compute smoothed curve (reused across charts)
     smoothed = smooth_x = None
     if len(step_losses) >= SMOOTH_WINDOW:
         kernel   = np.ones(SMOOTH_WINDOW) / SMOOTH_WINDOW
         smoothed = np.convolve(step_losses, kernel, mode="valid")
         smooth_x = step_numbers[SMOOTH_WINDOW - 1:]
 
-    # ── 1. Train vs Eval Loss ────────────────────────────────────────────
+    # 1. Train vs Eval Loss
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.plot(step_numbers, step_losses, color="#2196F3", alpha=0.4, linewidth=0.8, label="Train loss (step)")
     if smoothed is not None:
@@ -479,7 +452,7 @@ def save_training_graphs_hf(trainer, output_dir: Path):
     plt.close(fig)
     print(f"  ✓ Saved: {path1}")
 
-    # ── 2. Per-step raw loss ─────────────────────────────────────────────
+    # 2. Per-step raw loss
     fig, ax = plt.subplots(figsize=(12, 5))
     ax.plot(step_numbers, step_losses, color="#9C27B0", alpha=0.4, linewidth=0.8, label="Step loss")
     if smoothed is not None:
@@ -495,10 +468,10 @@ def save_training_graphs_hf(trainer, output_dir: Path):
     plt.close(fig)
     print(f"  ✓ Saved: {path2}")
 
-    # ── 3. Eval loss bar chart ───────────────────────────────────────────
+    # 3. Eval loss bar chart
     if eval_steps:
         best_idx = int(np.argmin(eval_losses))
-        bar_colors = ["#4CAF50" if i == best_idx else "#90CAF9" for i in range(len(eval_losses))]
+        bar_colors =["#4CAF50" if i == best_idx else "#90CAF9" for i in range(len(eval_losses))]
         fig, ax = plt.subplots(figsize=(max(6, len(eval_steps) * 1.0 + 2), 5))
         bars = ax.bar(range(len(eval_steps)), eval_losses, color=bar_colors, edgecolor="white")
         ax.set_xticks(range(len(eval_steps)))
@@ -517,15 +490,14 @@ def save_training_graphs_hf(trainer, output_dir: Path):
         print(f"  ✓ Saved: {path3}")
     else:
         print("  (no eval checkpoints yet — skipping eval_loss_bars.png)")
-        best_idx, bar_colors = 0, []
+        best_idx, bar_colors = 0,[]
 
-    # ── 4. 2×2 Dashboard ────────────────────────────────────────────────
+    # 4. 2×2 Dashboard
     fig, axes = plt.subplots(2, 2, figsize=(14, 9))
     fig.suptitle("Multilingual Whisper Fine-Tuning  [HuggingFace Trainer]\n"
                  "Yoruba · Hausa · Igbo · Pidgin",
                  fontsize=14, fontweight="bold")
 
-    # top-left: train + eval vs step
     axes[0, 0].plot(step_numbers, step_losses, color="#2196F3", alpha=0.4, linewidth=0.7)
     if smoothed is not None:
         axes[0, 0].plot(smooth_x, smoothed, color="#2196F3", linewidth=2, label="Train (smoothed)")
@@ -537,7 +509,6 @@ def save_training_graphs_hf(trainer, output_dir: Path):
     axes[0, 0].legend(fontsize=9)
     axes[0, 0].grid(True, alpha=0.3)
 
-    # top-right: eval loss bars
     if eval_steps:
         axes[0, 1].bar(range(len(eval_steps)), eval_losses, color=bar_colors, edgecolor="white")
         axes[0, 1].set_xticks(range(len(eval_steps)))
@@ -551,7 +522,6 @@ def save_training_graphs_hf(trainer, output_dir: Path):
                         ha="center", va="center", transform=axes[0, 1].transAxes, fontsize=11)
         axes[0, 1].axis("off")
 
-    # bottom-left: raw + smoothed step loss
     axes[1, 0].plot(step_numbers, step_losses, color="#9C27B0", alpha=0.35, linewidth=0.7)
     if smoothed is not None:
         axes[1, 0].plot(smooth_x, smoothed, color="#9C27B0", linewidth=1.8)
@@ -560,7 +530,6 @@ def save_training_graphs_hf(trainer, output_dir: Path):
     axes[1, 0].set_ylabel("Loss")
     axes[1, 0].grid(True, alpha=0.3)
 
-    # bottom-right: WER if available, else summary text
     wer_values = [w for w in eval_wers if w is not None]
     if wer_values and eval_steps:
         axes[1, 1].plot(eval_steps[:len(wer_values)], wer_values, "o-", color="#FF9800", linewidth=2)
@@ -570,9 +539,9 @@ def save_training_graphs_hf(trainer, output_dir: Path):
         axes[1, 1].grid(True, alpha=0.3)
     else:
         summary = [
-            f"Final train loss : {step_losses[-1]:.4f}",
+            f"Final train loss : {step_losses[-1]:.4f}" if step_losses else "Final train loss: N/A",
             f"Best eval loss   : {min(eval_losses):.4f}" if eval_losses else "Best eval loss   : N/A",
-            f"Total steps      : {step_numbers[-1]}",
+            f"Total steps      : {step_numbers[-1]}" if step_numbers else "Total steps      : 0",
             f"Train log entries: {len(train_logs)}",
         ]
         for i, txt in enumerate(summary):
@@ -588,17 +557,28 @@ def save_training_graphs_hf(trainer, output_dir: Path):
     print(f"  ✓ Saved: {path4}")
     print(f"\n  All graphs saved to: {graphs_dir.absolute()}")
 
-
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
 
 print("\nStarting training...\n")
 print("=" * 80)
+
+trackio_config = {
+    "model_name": MODEL_NAME,
+    "dataset": DATASET_NAME,
+    "learning_rate": LEARNING_RATE,
+    "batch_size": BATCH_SIZE,
+    "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
+    "max_steps": MAX_STEPS,
+    "warmup_steps": WARMUP_STEPS,
+}
+trackio.init(project=TRACKIO_PROJECT, config=trackio_config)
+
 trainer.train(resume_from_checkpoint=RESUME_FROM_CHECKPOINT or None)
 
 # ---------------------------------------------------------------------------
-# Save Final Model  (load_best_model_at_end=True means this IS the best model)
+# Save Final Model
 # ---------------------------------------------------------------------------
 
 print("\n" + "=" * 80)
@@ -606,11 +586,10 @@ print("Training complete! Saving final model...")
 trainer.save_model(OUTPUT_DIR)
 processor.save_pretrained(OUTPUT_DIR)
 
-# Write a JSON record so Gradio (and humans) always know which checkpoint was best
 import json
-_best_ckpt = trainer.state.best_model_checkpoint   # e.g. "./whisper-small-nigerian/checkpoint-3000"
+_best_ckpt = trainer.state.best_model_checkpoint   
 _best_step = int(_best_ckpt.split("-")[-1]) if _best_ckpt else None
-_best_wer  = trainer.state.best_metric             # numeric WER value
+_best_wer  = trainer.state.best_metric             
 best_info  = {
     "best_checkpoint": _best_ckpt,
     "best_step": _best_step,
@@ -641,6 +620,7 @@ print("\nLanguages fine-tuned on: Yoruba, Hausa, Igbo, Pidgin English")
 print(f"\nView training dashboard:")
 print(f"  trackio show --project {TRACKIO_PROJECT}")
 
-# Close the log file cleanly
+trackio.finish()
+
 _tee.close()
 print(f"\nFull training log saved to: {_LOG_PATH.resolve()}")
