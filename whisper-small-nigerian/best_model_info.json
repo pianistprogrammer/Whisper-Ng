@@ -1,0 +1,7 @@
+{
+  "best_checkpoint": "./whisper-small-nigerian/checkpoint-3000",
+  "best_step": 3000,
+  "best_metric_wer": 63.8649,
+  "final_model_dir": "/Users/I558118/Documents/Projects/Whisper-Ng/whisper-small-nigerian",
+  "note": "The model saved to 'final_model_dir' contains the best checkpoint weights. Load it with WhisperForConditionalGeneration.from_pretrained(final_model_dir)."
+}

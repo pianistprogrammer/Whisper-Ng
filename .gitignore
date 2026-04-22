@@ -4,18 +4,23 @@ yoruba_whisper_lora/
 test_output_3samples/
 multilingual_whisper_lora/
 whisper-base-nigerian/
-whisper-small-nigerian/
+
+# whisper-small-nigerian: track small config/log files, ignore large data
+whisper-small-nigerian/checkpoint-*/
+whisper-small-nigerian/model.safetensors
+whisper-small-nigerian/training_args.bin
+whisper-small-nigerian/runs/
+whisper-small-nigerian/tokenizer.json
+
 # Generic catch-all for any future checkpoint / output dirs
 hf/whisper-*/
 hf/multilingual_*/
 mlx/multilingual_*/
 mlx/whisper-*/
-*.safetensors
 *.pt
 *.npz
 
-# Logs
-*.txt
+# Logs (but allow whisper-small-nigerian txt logs)
 *.log
 
 # Python and environment

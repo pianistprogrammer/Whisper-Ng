@@ -1,0 +1,386 @@
+Training log: /Users/I558118/Documents/Projects/Whisper-Ng/whisper-small-nigerian/training_log_20260421_204612.txt
+Run started : 20260421_204612
+Model       : openai/whisper-small
+Max steps   : 4000  |  Eval every 1000  |  Save every 1000
+Batch size  : 4  |  Grad accum: 4  →  effective batch = 16
+LR          : 1e-05  |  Warmup: 500 steps
+Device      : MPS
+
+Loading feature extractor, tokenizer, and processor...
+Loading and preprocessing datasets for all 4 languages...
+  Processing YORUBA (yor_tts)...
+    train=2,233  val=201  test=177
+  Processing HAUSA (hau_tts)...
+    train=1,572  val=202  test=197
+  Processing IBO_TTS (ibo_tts)...
+    train=1,552  val=159  test=200
+  Processing ENGLISH (pcm_tts)...
+    train=1,590  val=199  test=204
+
+Combining and shuffling all languages...
+  Combined train : 7,708
+  Combined test  : 778
+Loading pre-trained Whisper model...
+Full model (encoder + decoder) will be fine-tuned from step 1.
+Initializing trainer...
+
+Starting training...
+
+================================================================================
+step=   25  loss=15.8141  learning_rate=4.8e-07  grad_norm=21.435
+{'loss': '15.81', 'grad_norm': '21.43', 'learning_rate': '4.8e-07', 'epoch': '0.05189'}
+step=   50  loss=14.6818  learning_rate=9.8e-07  grad_norm=13.9414
+{'loss': '14.68', 'grad_norm': '13.94', 'learning_rate': '9.8e-07', 'epoch': '0.1038'}
+step=   75  loss=13.6085  learning_rate=1.48e-06  grad_norm=13.4964
+{'loss': '13.61', 'grad_norm': '13.5', 'learning_rate': '1.48e-06', 'epoch': '0.1557'}
+step=  100  loss=12.557  learning_rate=1.98e-06  grad_norm=11.8992
+{'loss': '12.56', 'grad_norm': '11.9', 'learning_rate': '1.98e-06', 'epoch': '0.2076'}
+step=  125  loss=11.3581  learning_rate=2.48e-06  grad_norm=10.5372
+{'loss': '11.36', 'grad_norm': '10.54', 'learning_rate': '2.48e-06', 'epoch': '0.2595'}
+step=  150  loss=11.408  learning_rate=2.98e-06  grad_norm=9.4581
+{'loss': '11.41', 'grad_norm': '9.458', 'learning_rate': '2.98e-06', 'epoch': '0.3114'}
+step=  175  loss=10.7835  learning_rate=3.48e-06  grad_norm=9.46957
+{'loss': '10.78', 'grad_norm': '9.47', 'learning_rate': '3.48e-06', 'epoch': '0.3633'}
+step=  200  loss=10.1799  learning_rate=3.98e-06  grad_norm=10.161
+{'loss': '10.18', 'grad_norm': '10.16', 'learning_rate': '3.98e-06', 'epoch': '0.4152'}
+step=  225  loss=9.17082  learning_rate=4.48e-06  grad_norm=7.3104
+{'loss': '9.171', 'grad_norm': '7.31', 'learning_rate': '4.48e-06', 'epoch': '0.467'}
+step=  250  loss=8.46202  learning_rate=4.98e-06  grad_norm=9.38652
+{'loss': '8.462', 'grad_norm': '9.387', 'learning_rate': '4.98e-06', 'epoch': '0.5189'}
+step=  275  loss=8.81758  learning_rate=5.48e-06  grad_norm=8.26936
+{'loss': '8.818', 'grad_norm': '8.269', 'learning_rate': '5.48e-06', 'epoch': '0.5708'}
+step=  300  loss=8.4147  learning_rate=5.98e-06  grad_norm=10.6955
+{'loss': '8.415', 'grad_norm': '10.7', 'learning_rate': '5.98e-06', 'epoch': '0.6227'}
+step=  325  loss=7.97867  learning_rate=6.48e-06  grad_norm=10.022
+{'loss': '7.979', 'grad_norm': '10.02', 'learning_rate': '6.48e-06', 'epoch': '0.6746'}
+step=  350  loss=7.90889  learning_rate=6.98e-06  grad_norm=8.09359
+{'loss': '7.909', 'grad_norm': '8.094', 'learning_rate': '6.98e-06', 'epoch': '0.7265'}
+step=  375  loss=7.07282  learning_rate=7.48e-06  grad_norm=8.60605
+{'loss': '7.073', 'grad_norm': '8.606', 'learning_rate': '7.48e-06', 'epoch': '0.7784'}
+step=  400  loss=6.90995  learning_rate=7.98e-06  grad_norm=7.4839
+{'loss': '6.91', 'grad_norm': '7.484', 'learning_rate': '7.98e-06', 'epoch': '0.8303'}
+step=  425  loss=7.08465  learning_rate=8.48e-06  grad_norm=8.33696
+{'loss': '7.085', 'grad_norm': '8.337', 'learning_rate': '8.48e-06', 'epoch': '0.8822'}
+step=  450  loss=7.48182  learning_rate=8.98e-06  grad_norm=8.39024
+{'loss': '7.482', 'grad_norm': '8.39', 'learning_rate': '8.98e-06', 'epoch': '0.9341'}
+step=  475  loss=6.85948  learning_rate=9.48e-06  grad_norm=8.95094
+{'loss': '6.859', 'grad_norm': '8.951', 'learning_rate': '9.48e-06', 'epoch': '0.986'}
+step=  500  loss=6.20636  learning_rate=9.98e-06  grad_norm=9.68021
+{'loss': '6.206', 'grad_norm': '9.68', 'learning_rate': '9.98e-06', 'epoch': '1.037'}
+step=  525  loss=6.39213  learning_rate=9.93143e-06  grad_norm=7.33817
+{'loss': '6.392', 'grad_norm': '7.338', 'learning_rate': '9.931e-06', 'epoch': '1.089'}
+step=  550  loss=6.35186  learning_rate=9.86e-06  grad_norm=8.57195
+{'loss': '6.352', 'grad_norm': '8.572', 'learning_rate': '9.86e-06', 'epoch': '1.141'}
+step=  575  loss=6.40651  learning_rate=9.78857e-06  grad_norm=8.85102
+{'loss': '6.407', 'grad_norm': '8.851', 'learning_rate': '9.789e-06', 'epoch': '1.193'}
+step=  600  loss=5.49272  learning_rate=9.71714e-06  grad_norm=6.53797
+{'loss': '5.493', 'grad_norm': '6.538', 'learning_rate': '9.717e-06', 'epoch': '1.245'}
+step=  625  loss=6.21748  learning_rate=9.64571e-06  grad_norm=6.55693
+{'loss': '6.217', 'grad_norm': '6.557', 'learning_rate': '9.646e-06', 'epoch': '1.297'}
+step=  650  loss=5.29141  learning_rate=9.57429e-06  grad_norm=6.70172
+{'loss': '5.291', 'grad_norm': '6.702', 'learning_rate': '9.574e-06', 'epoch': '1.349'}
+step=  675  loss=5.47492  learning_rate=9.50286e-06  grad_norm=8.49328
+{'loss': '5.475', 'grad_norm': '8.493', 'learning_rate': '9.503e-06', 'epoch': '1.401'}
+step=  700  loss=6.20516  learning_rate=9.43143e-06  grad_norm=6.54344
+{'loss': '6.205', 'grad_norm': '6.543', 'learning_rate': '9.431e-06', 'epoch': '1.453'}
+step=  725  loss=6.49147  learning_rate=9.36e-06  grad_norm=7.62213
+{'loss': '6.491', 'grad_norm': '7.622', 'learning_rate': '9.36e-06', 'epoch': '1.504'}
+step=  750  loss=5.56592  learning_rate=9.28857e-06  grad_norm=5.59859
+{'loss': '5.566', 'grad_norm': '5.599', 'learning_rate': '9.289e-06', 'epoch': '1.556'}
+step=  775  loss=5.62161  learning_rate=9.21714e-06  grad_norm=9.79395
+{'loss': '5.622', 'grad_norm': '9.794', 'learning_rate': '9.217e-06', 'epoch': '1.608'}
+step=  800  loss=5.42292  learning_rate=9.14571e-06  grad_norm=6.70108
+{'loss': '5.423', 'grad_norm': '6.701', 'learning_rate': '9.146e-06', 'epoch': '1.66'}
+step=  825  loss=5.59158  learning_rate=9.07429e-06  grad_norm=7.16724
+{'loss': '5.592', 'grad_norm': '7.167', 'learning_rate': '9.074e-06', 'epoch': '1.712'}
+step=  850  loss=5.5222  learning_rate=9.00286e-06  grad_norm=7.4702
+{'loss': '5.522', 'grad_norm': '7.47', 'learning_rate': '9.003e-06', 'epoch': '1.764'}
+step=  875  loss=5.56743  learning_rate=8.93143e-06  grad_norm=7.25431
+{'loss': '5.567', 'grad_norm': '7.254', 'learning_rate': '8.931e-06', 'epoch': '1.816'}
+step=  900  loss=5.29508  learning_rate=8.86e-06  grad_norm=6.39855
+{'loss': '5.295', 'grad_norm': '6.399', 'learning_rate': '8.86e-06', 'epoch': '1.868'}
+step=  925  loss=5.45866  learning_rate=8.78857e-06  grad_norm=6.46033
+{'loss': '5.459', 'grad_norm': '6.46', 'learning_rate': '8.789e-06', 'epoch': '1.92'}
+step=  950  loss=5.69422  learning_rate=8.71714e-06  grad_norm=7.48364
+{'loss': '5.694', 'grad_norm': '7.484', 'learning_rate': '8.717e-06', 'epoch': '1.971'}
+step=  975  loss=4.96335  learning_rate=8.64571e-06  grad_norm=6.22712
+{'loss': '4.963', 'grad_norm': '6.227', 'learning_rate': '8.646e-06', 'epoch': '2.023'}
+step= 1000  loss=4.993  learning_rate=8.57429e-06  grad_norm=7.40559
+{'loss': '4.993', 'grad_norm': '7.406', 'learning_rate': '8.574e-06', 'epoch': '2.075'}
+step= 1000  eval_loss=1.02933  eval_wer=66.3877
+{'eval_loss': '1.029', 'eval_wer': '66.39', 'eval_runtime': '592', 'eval_samples_per_second': '1.314', 'eval_steps_per_second': '1.314', 'epoch': '2.075'}
+step= 1025  loss=4.50401  learning_rate=8.50286e-06  grad_norm=7.34819
+{'loss': '4.504', 'grad_norm': '7.348', 'learning_rate': '8.503e-06', 'epoch': '2.127'}
+step= 1050  loss=4.38969  learning_rate=8.43143e-06  grad_norm=8.11604
+{'loss': '4.39', 'grad_norm': '8.116', 'learning_rate': '8.431e-06', 'epoch': '2.179'}
+step= 1075  loss=4.72857  learning_rate=8.36e-06  grad_norm=5.94637
+{'loss': '4.729', 'grad_norm': '5.946', 'learning_rate': '8.36e-06', 'epoch': '2.23'}
+step= 1100  loss=4.45568  learning_rate=8.28857e-06  grad_norm=8.6319
+{'loss': '4.456', 'grad_norm': '8.632', 'learning_rate': '8.289e-06', 'epoch': '2.282'}
+step= 1125  loss=4.37486  learning_rate=8.21714e-06  grad_norm=6.73722
+{'loss': '4.375', 'grad_norm': '6.737', 'learning_rate': '8.217e-06', 'epoch': '2.334'}
+step= 1150  loss=4.99928  learning_rate=8.14571e-06  grad_norm=6.81134
+{'loss': '4.999', 'grad_norm': '6.811', 'learning_rate': '8.146e-06', 'epoch': '2.386'}
+step= 1175  loss=4.4998  learning_rate=8.07429e-06  grad_norm=7.95889
+{'loss': '4.5', 'grad_norm': '7.959', 'learning_rate': '8.074e-06', 'epoch': '2.438'}
+step= 1200  loss=4.43976  learning_rate=8.00286e-06  grad_norm=6.99369
+{'loss': '4.44', 'grad_norm': '6.994', 'learning_rate': '8.003e-06', 'epoch': '2.49'}
+step= 1225  loss=4.0772  learning_rate=7.93143e-06  grad_norm=7.09056
+{'loss': '4.077', 'grad_norm': '7.091', 'learning_rate': '7.931e-06', 'epoch': '2.542'}
+step= 1250  loss=4.7548  learning_rate=7.86e-06  grad_norm=6.60243
+{'loss': '4.755', 'grad_norm': '6.602', 'learning_rate': '7.86e-06', 'epoch': '2.594'}
+step= 1275  loss=4.2494  learning_rate=7.78857e-06  grad_norm=6.20605
+{'loss': '4.249', 'grad_norm': '6.206', 'learning_rate': '7.789e-06', 'epoch': '2.646'}
+step= 1300  loss=3.98105  learning_rate=7.71714e-06  grad_norm=5.5438
+{'loss': '3.981', 'grad_norm': '5.544', 'learning_rate': '7.717e-06', 'epoch': '2.697'}
+step= 1325  loss=4.83772  learning_rate=7.64571e-06  grad_norm=5.87445
+{'loss': '4.838', 'grad_norm': '5.874', 'learning_rate': '7.646e-06', 'epoch': '2.749'}
+step= 1350  loss=3.92575  learning_rate=7.57429e-06  grad_norm=7.63816
+{'loss': '3.926', 'grad_norm': '7.638', 'learning_rate': '7.574e-06', 'epoch': '2.801'}
+step= 1375  loss=4.90694  learning_rate=7.50286e-06  grad_norm=7.39828
+{'loss': '4.907', 'grad_norm': '7.398', 'learning_rate': '7.503e-06', 'epoch': '2.853'}
+step= 1400  loss=4.75071  learning_rate=7.43143e-06  grad_norm=6.61058
+{'loss': '4.751', 'grad_norm': '6.611', 'learning_rate': '7.431e-06', 'epoch': '2.905'}
+step= 1425  loss=4.19077  learning_rate=7.36e-06  grad_norm=7.74713
+{'loss': '4.191', 'grad_norm': '7.747', 'learning_rate': '7.36e-06', 'epoch': '2.957'}
+step= 1450  loss=4.45781  learning_rate=7.28857e-06  grad_norm=4.50541
+{'loss': '4.458', 'grad_norm': '4.505', 'learning_rate': '7.289e-06', 'epoch': '3.008'}
+step= 1475  loss=3.5272  learning_rate=7.21714e-06  grad_norm=5.93901
+{'loss': '3.527', 'grad_norm': '5.939', 'learning_rate': '7.217e-06', 'epoch': '3.06'}
+step= 1500  loss=4.12279  learning_rate=7.14571e-06  grad_norm=5.87046
+{'loss': '4.123', 'grad_norm': '5.87', 'learning_rate': '7.146e-06', 'epoch': '3.112'}
+step= 1525  loss=3.76483  learning_rate=7.07429e-06  grad_norm=6.32557
+{'loss': '3.765', 'grad_norm': '6.326', 'learning_rate': '7.074e-06', 'epoch': '3.164'}
+step= 1550  loss=3.77997  learning_rate=7.00286e-06  grad_norm=7.29166
+{'loss': '3.78', 'grad_norm': '7.292', 'learning_rate': '7.003e-06', 'epoch': '3.216'}
+step= 1575  loss=3.93059  learning_rate=6.93143e-06  grad_norm=7.91819
+{'loss': '3.931', 'grad_norm': '7.918', 'learning_rate': '6.931e-06', 'epoch': '3.268'}
+step= 1600  loss=3.91778  learning_rate=6.86e-06  grad_norm=5.72874
+{'loss': '3.918', 'grad_norm': '5.729', 'learning_rate': '6.86e-06', 'epoch': '3.32'}
+step= 1625  loss=3.47028  learning_rate=6.78857e-06  grad_norm=5.5587
+{'loss': '3.47', 'grad_norm': '5.559', 'learning_rate': '6.789e-06', 'epoch': '3.372'}
+step= 1650  loss=3.5481  learning_rate=6.71714e-06  grad_norm=4.82069
+{'loss': '3.548', 'grad_norm': '4.821', 'learning_rate': '6.717e-06', 'epoch': '3.423'}
+step= 1675  loss=4.14895  learning_rate=6.64571e-06  grad_norm=6.32587
+{'loss': '4.149', 'grad_norm': '6.326', 'learning_rate': '6.646e-06', 'epoch': '3.475'}
+step= 1700  loss=4.10208  learning_rate=6.57429e-06  grad_norm=6.4022
+{'loss': '4.102', 'grad_norm': '6.402', 'learning_rate': '6.574e-06', 'epoch': '3.527'}
+step= 1725  loss=3.31998  learning_rate=6.50286e-06  grad_norm=6.41894
+{'loss': '3.32', 'grad_norm': '6.419', 'learning_rate': '6.503e-06', 'epoch': '3.579'}
+step= 1750  loss=3.65235  learning_rate=6.43143e-06  grad_norm=6.89261
+{'loss': '3.652', 'grad_norm': '6.893', 'learning_rate': '6.431e-06', 'epoch': '3.631'}
+step= 1775  loss=3.84924  learning_rate=6.36e-06  grad_norm=6.86437
+{'loss': '3.849', 'grad_norm': '6.864', 'learning_rate': '6.36e-06', 'epoch': '3.683'}
+step= 1800  loss=4.0113  learning_rate=6.28857e-06  grad_norm=6.94346
+{'loss': '4.011', 'grad_norm': '6.943', 'learning_rate': '6.289e-06', 'epoch': '3.735'}
+step= 1825  loss=3.82085  learning_rate=6.21714e-06  grad_norm=8.25443
+{'loss': '3.821', 'grad_norm': '8.254', 'learning_rate': '6.217e-06', 'epoch': '3.787'}
+step= 1850  loss=3.92574  learning_rate=6.14571e-06  grad_norm=5.11311
+{'loss': '3.926', 'grad_norm': '5.113', 'learning_rate': '6.146e-06', 'epoch': '3.839'}
+step= 1875  loss=4.01804  learning_rate=6.07429e-06  grad_norm=7.12352
+{'loss': '4.018', 'grad_norm': '7.124', 'learning_rate': '6.074e-06', 'epoch': '3.891'}
+step= 1900  loss=3.768  learning_rate=6.00286e-06  grad_norm=6.39144
+{'loss': '3.768', 'grad_norm': '6.391', 'learning_rate': '6.003e-06', 'epoch': '3.942'}
+step= 1925  loss=3.87132  learning_rate=5.93143e-06  grad_norm=6.82957
+{'loss': '3.871', 'grad_norm': '6.83', 'learning_rate': '5.931e-06', 'epoch': '3.994'}
+step= 1950  loss=2.92613  learning_rate=5.86e-06  grad_norm=6.067
+{'loss': '2.926', 'grad_norm': '6.067', 'learning_rate': '5.86e-06', 'epoch': '4.046'}
+step= 1975  loss=3.31196  learning_rate=5.78857e-06  grad_norm=4.80882
+{'loss': '3.312', 'grad_norm': '4.809', 'learning_rate': '5.789e-06', 'epoch': '4.098'}
+step= 2000  loss=2.80271  learning_rate=5.71714e-06  grad_norm=6.76182
+{'loss': '2.803', 'grad_norm': '6.762', 'learning_rate': '5.717e-06', 'epoch': '4.149'}
+step= 2000  eval_loss=0.950789  eval_wer=64.1398
+{'eval_loss': '0.9508', 'eval_wer': '64.14', 'eval_runtime': '580.5', 'eval_samples_per_second': '1.34', 'eval_steps_per_second': '1.34', 'epoch': '4.149'}
+step= 2025  loss=3.21319  learning_rate=5.64571e-06  grad_norm=6.57449
+{'loss': '3.213', 'grad_norm': '6.574', 'learning_rate': '5.646e-06', 'epoch': '4.201'}
+step= 2050  loss=3.40699  learning_rate=5.57429e-06  grad_norm=6.29732
+{'loss': '3.407', 'grad_norm': '6.297', 'learning_rate': '5.574e-06', 'epoch': '4.253'}
+step= 2075  loss=3.09474  learning_rate=5.50286e-06  grad_norm=4.47015
+{'loss': '3.095', 'grad_norm': '4.47', 'learning_rate': '5.503e-06', 'epoch': '4.305'}
+step= 2100  loss=3.46688  learning_rate=5.43143e-06  grad_norm=4.3449
+{'loss': '3.467', 'grad_norm': '4.345', 'learning_rate': '5.431e-06', 'epoch': '4.357'}
+step= 2125  loss=3.28762  learning_rate=5.36e-06  grad_norm=6.20061
+{'loss': '3.288', 'grad_norm': '6.201', 'learning_rate': '5.36e-06', 'epoch': '4.409'}
+step= 2150  loss=3.03187  learning_rate=5.28857e-06  grad_norm=6.62858
+{'loss': '3.032', 'grad_norm': '6.629', 'learning_rate': '5.289e-06', 'epoch': '4.461'}
+step= 2175  loss=2.90087  learning_rate=5.21714e-06  grad_norm=5.08467
+{'loss': '2.901', 'grad_norm': '5.085', 'learning_rate': '5.217e-06', 'epoch': '4.513'}
+step= 2200  loss=3.18391  learning_rate=5.14571e-06  grad_norm=5.631
+{'loss': '3.184', 'grad_norm': '5.631', 'learning_rate': '5.146e-06', 'epoch': '4.565'}
+step= 2225  loss=3.40392  learning_rate=5.07429e-06  grad_norm=5.39854
+{'loss': '3.404', 'grad_norm': '5.399', 'learning_rate': '5.074e-06', 'epoch': '4.617'}
+step= 2250  loss=2.84678  learning_rate=5.00286e-06  grad_norm=5.95794
+{'loss': '2.847', 'grad_norm': '5.958', 'learning_rate': '5.003e-06', 'epoch': '4.668'}
+step= 2275  loss=3.22345  learning_rate=4.93143e-06  grad_norm=5.65232
+{'loss': '3.223', 'grad_norm': '5.652', 'learning_rate': '4.931e-06', 'epoch': '4.72'}
+step= 2300  loss=3.05822  learning_rate=4.86e-06  grad_norm=5.90086
+{'loss': '3.058', 'grad_norm': '5.901', 'learning_rate': '4.86e-06', 'epoch': '4.772'}
+step= 2325  loss=3.24423  learning_rate=4.78857e-06  grad_norm=7.8663
+{'loss': '3.244', 'grad_norm': '7.866', 'learning_rate': '4.789e-06', 'epoch': '4.824'}
+step= 2350  loss=3.31679  learning_rate=4.71714e-06  grad_norm=6.41301
+{'loss': '3.317', 'grad_norm': '6.413', 'learning_rate': '4.717e-06', 'epoch': '4.876'}
+step= 2375  loss=3.11065  learning_rate=4.64571e-06  grad_norm=5.12779
+{'loss': '3.111', 'grad_norm': '5.128', 'learning_rate': '4.646e-06', 'epoch': '4.928'}
+step= 2400  loss=3.71651  learning_rate=4.57429e-06  grad_norm=5.9418
+{'loss': '3.717', 'grad_norm': '5.942', 'learning_rate': '4.574e-06', 'epoch': '4.98'}
+step= 2425  loss=3.20247  learning_rate=4.50286e-06  grad_norm=5.57719
+{'loss': '3.202', 'grad_norm': '5.577', 'learning_rate': '4.503e-06', 'epoch': '5.031'}
+step= 2450  loss=2.94873  learning_rate=4.43143e-06  grad_norm=7.32309
+{'loss': '2.949', 'grad_norm': '7.323', 'learning_rate': '4.431e-06', 'epoch': '5.083'}
+step= 2475  loss=2.86151  learning_rate=4.36e-06  grad_norm=4.58605
+{'loss': '2.862', 'grad_norm': '4.586', 'learning_rate': '4.36e-06', 'epoch': '5.135'}
+step= 2500  loss=2.59861  learning_rate=4.28857e-06  grad_norm=5.50968
+{'loss': '2.599', 'grad_norm': '5.51', 'learning_rate': '4.289e-06', 'epoch': '5.187'}
+step= 2525  loss=2.9872  learning_rate=4.21714e-06  grad_norm=7.38111
+{'loss': '2.987', 'grad_norm': '7.381', 'learning_rate': '4.217e-06', 'epoch': '5.239'}
+step= 2550  loss=2.91699  learning_rate=4.14571e-06  grad_norm=5.63553
+{'loss': '2.917', 'grad_norm': '5.636', 'learning_rate': '4.146e-06', 'epoch': '5.291'}
+step= 2575  loss=2.68364  learning_rate=4.07429e-06  grad_norm=5.5911
+{'loss': '2.684', 'grad_norm': '5.591', 'learning_rate': '4.074e-06', 'epoch': '5.343'}
+step= 2600  loss=2.87136  learning_rate=4.00286e-06  grad_norm=5.61728
+{'loss': '2.871', 'grad_norm': '5.617', 'learning_rate': '4.003e-06', 'epoch': '5.394'}
+step= 2625  loss=2.98268  learning_rate=3.93143e-06  grad_norm=5.4647
+{'loss': '2.983', 'grad_norm': '5.465', 'learning_rate': '3.931e-06', 'epoch': '5.446'}
+step= 2650  loss=2.9864  learning_rate=3.86e-06  grad_norm=5.44523
+{'loss': '2.986', 'grad_norm': '5.445', 'learning_rate': '3.86e-06', 'epoch': '5.498'}
+step= 2675  loss=2.80685  learning_rate=3.78857e-06  grad_norm=6.72658
+{'loss': '2.807', 'grad_norm': '6.727', 'learning_rate': '3.789e-06', 'epoch': '5.55'}
+step= 2700  loss=2.30945  learning_rate=3.71714e-06  grad_norm=4.3258
+{'loss': '2.309', 'grad_norm': '4.326', 'learning_rate': '3.717e-06', 'epoch': '5.602'}
+step= 2725  loss=3.02458  learning_rate=3.64571e-06  grad_norm=6.91977
+{'loss': '3.025', 'grad_norm': '6.92', 'learning_rate': '3.646e-06', 'epoch': '5.654'}
+step= 2750  loss=2.80356  learning_rate=3.57429e-06  grad_norm=5.22812
+{'loss': '2.804', 'grad_norm': '5.228', 'learning_rate': '3.574e-06', 'epoch': '5.706'}
+step= 2775  loss=2.77982  learning_rate=3.50286e-06  grad_norm=3.95778
+{'loss': '2.78', 'grad_norm': '3.958', 'learning_rate': '3.503e-06', 'epoch': '5.758'}
+step= 2800  loss=2.61105  learning_rate=3.43143e-06  grad_norm=5.42796
+{'loss': '2.611', 'grad_norm': '5.428', 'learning_rate': '3.431e-06', 'epoch': '5.81'}
+step= 2825  loss=2.81601  learning_rate=3.36e-06  grad_norm=6.01694
+{'loss': '2.816', 'grad_norm': '6.017', 'learning_rate': '3.36e-06', 'epoch': '5.861'}
+step= 2850  loss=2.38872  learning_rate=3.28857e-06  grad_norm=4.515
+{'loss': '2.389', 'grad_norm': '4.515', 'learning_rate': '3.289e-06', 'epoch': '5.913'}
+step= 2875  loss=3.16101  learning_rate=3.21714e-06  grad_norm=4.67062
+{'loss': '3.161', 'grad_norm': '4.671', 'learning_rate': '3.217e-06', 'epoch': '5.965'}
+step= 2900  loss=2.62176  learning_rate=3.14571e-06  grad_norm=5.90393
+{'loss': '2.622', 'grad_norm': '5.904', 'learning_rate': '3.146e-06', 'epoch': '6.017'}
+step= 2925  loss=2.90812  learning_rate=3.07429e-06  grad_norm=6.69367
+{'loss': '2.908', 'grad_norm': '6.694', 'learning_rate': '3.074e-06', 'epoch': '6.069'}
+step= 2950  loss=2.04111  learning_rate=3.00286e-06  grad_norm=5.87211
+{'loss': '2.041', 'grad_norm': '5.872', 'learning_rate': '3.003e-06', 'epoch': '6.12'}
+step= 2975  loss=2.42057  learning_rate=2.93143e-06  grad_norm=5.87521
+{'loss': '2.421', 'grad_norm': '5.875', 'learning_rate': '2.931e-06', 'epoch': '6.172'}
+step= 3000  loss=2.67948  learning_rate=2.86e-06  grad_norm=7.30264
+{'loss': '2.679', 'grad_norm': '7.303', 'learning_rate': '2.86e-06', 'epoch': '6.224'}
+step= 3000  eval_loss=0.961556  eval_wer=63.8649
+{'eval_loss': '0.9616', 'eval_wer': '63.86', 'eval_runtime': '581', 'eval_samples_per_second': '1.339', 'eval_steps_per_second': '1.339', 'epoch': '6.224'}
+step= 3025  loss=2.3327  learning_rate=2.78857e-06  grad_norm=4.8766
+{'loss': '2.333', 'grad_norm': '4.877', 'learning_rate': '2.789e-06', 'epoch': '6.276'}
+step= 3050  loss=2.44436  learning_rate=2.71714e-06  grad_norm=6.67133
+{'loss': '2.444', 'grad_norm': '6.671', 'learning_rate': '2.717e-06', 'epoch': '6.328'}
+step= 3075  loss=1.90479  learning_rate=2.64571e-06  grad_norm=4.49692
+{'loss': '1.905', 'grad_norm': '4.497', 'learning_rate': '2.646e-06', 'epoch': '6.38'}
+step= 3100  loss=2.37809  learning_rate=2.57429e-06  grad_norm=4.37253
+{'loss': '2.378', 'grad_norm': '4.373', 'learning_rate': '2.574e-06', 'epoch': '6.432'}
+step= 3125  loss=2.37415  learning_rate=2.50286e-06  grad_norm=5.27724
+{'loss': '2.374', 'grad_norm': '5.277', 'learning_rate': '2.503e-06', 'epoch': '6.484'}
+step= 3150  loss=2.87479  learning_rate=2.43143e-06  grad_norm=5.64887
+{'loss': '2.875', 'grad_norm': '5.649', 'learning_rate': '2.431e-06', 'epoch': '6.536'}
+step= 3175  loss=2.94769  learning_rate=2.36e-06  grad_norm=5.32168
+{'loss': '2.948', 'grad_norm': '5.322', 'learning_rate': '2.36e-06', 'epoch': '6.587'}
+step= 3200  loss=2.00312  learning_rate=2.28857e-06  grad_norm=5.98565
+{'loss': '2.003', 'grad_norm': '5.986', 'learning_rate': '2.289e-06', 'epoch': '6.639'}
+step= 3225  loss=2.19194  learning_rate=2.21714e-06  grad_norm=5.29218
+{'loss': '2.192', 'grad_norm': '5.292', 'learning_rate': '2.217e-06', 'epoch': '6.691'}
+step= 3250  loss=2.71889  learning_rate=2.14571e-06  grad_norm=6.37802
+{'loss': '2.719', 'grad_norm': '6.378', 'learning_rate': '2.146e-06', 'epoch': '6.743'}
+step= 3275  loss=2.76636  learning_rate=2.07429e-06  grad_norm=7.07159
+{'loss': '2.766', 'grad_norm': '7.072', 'learning_rate': '2.074e-06', 'epoch': '6.795'}
+step= 3300  loss=2.73579  learning_rate=2.00286e-06  grad_norm=6.43506
+{'loss': '2.736', 'grad_norm': '6.435', 'learning_rate': '2.003e-06', 'epoch': '6.847'}
+step= 3325  loss=2.51652  learning_rate=1.93143e-06  grad_norm=5.27102
+{'loss': '2.517', 'grad_norm': '5.271', 'learning_rate': '1.931e-06', 'epoch': '6.899'}
+step= 3350  loss=2.8333  learning_rate=1.86e-06  grad_norm=6.70617
+{'loss': '2.833', 'grad_norm': '6.706', 'learning_rate': '1.86e-06', 'epoch': '6.951'}
+step= 3375  loss=2.17799  learning_rate=1.78857e-06  grad_norm=3.48989
+{'loss': '2.178', 'grad_norm': '3.49', 'learning_rate': '1.789e-06', 'epoch': '7.002'}
+step= 3400  loss=2.19657  learning_rate=1.71714e-06  grad_norm=6.53364
+{'loss': '2.197', 'grad_norm': '6.534', 'learning_rate': '1.717e-06', 'epoch': '7.054'}
+step= 3425  loss=2.31483  learning_rate=1.64571e-06  grad_norm=6.59722
+{'loss': '2.315', 'grad_norm': '6.597', 'learning_rate': '1.646e-06', 'epoch': '7.106'}
+step= 3450  loss=2.65807  learning_rate=1.57429e-06  grad_norm=5.48771
+{'loss': '2.658', 'grad_norm': '5.488', 'learning_rate': '1.574e-06', 'epoch': '7.158'}
+step= 3475  loss=2.57086  learning_rate=1.50286e-06  grad_norm=5.64454
+{'loss': '2.571', 'grad_norm': '5.645', 'learning_rate': '1.503e-06', 'epoch': '7.21'}
+step= 3500  loss=2.45576  learning_rate=1.43143e-06  grad_norm=6.27053
+{'loss': '2.456', 'grad_norm': '6.271', 'learning_rate': '1.431e-06', 'epoch': '7.262'}
+step= 3525  loss=2.2341  learning_rate=1.36e-06  grad_norm=2.47847
+{'loss': '2.234', 'grad_norm': '2.478', 'learning_rate': '1.36e-06', 'epoch': '7.313'}
+step= 3550  loss=2.18269  learning_rate=1.28857e-06  grad_norm=7.41083
+{'loss': '2.183', 'grad_norm': '7.411', 'learning_rate': '1.289e-06', 'epoch': '7.365'}
+step= 3575  loss=2.07204  learning_rate=1.21714e-06  grad_norm=5.75648
+{'loss': '2.072', 'grad_norm': '5.756', 'learning_rate': '1.217e-06', 'epoch': '7.417'}
+step= 3600  loss=2.20855  learning_rate=1.14571e-06  grad_norm=4.35784
+{'loss': '2.209', 'grad_norm': '4.358', 'learning_rate': '1.146e-06', 'epoch': '7.469'}
+step= 3625  loss=2.22513  learning_rate=1.07429e-06  grad_norm=7.12628
+{'loss': '2.225', 'grad_norm': '7.126', 'learning_rate': '1.074e-06', 'epoch': '7.521'}
+step= 3650  loss=2.24656  learning_rate=1.00286e-06  grad_norm=4.98739
+{'loss': '2.247', 'grad_norm': '4.987', 'learning_rate': '1.003e-06', 'epoch': '7.573'}
+step= 3675  loss=2.46894  learning_rate=9.31429e-07  grad_norm=6.41513
+{'loss': '2.469', 'grad_norm': '6.415', 'learning_rate': '9.314e-07', 'epoch': '7.625'}
+step= 3700  loss=1.98687  learning_rate=8.6e-07  grad_norm=6.65517
+{'loss': '1.987', 'grad_norm': '6.655', 'learning_rate': '8.6e-07', 'epoch': '7.677'}
+step= 3725  loss=2.41411  learning_rate=7.88571e-07  grad_norm=6.24702
+{'loss': '2.414', 'grad_norm': '6.247', 'learning_rate': '7.886e-07', 'epoch': '7.729'}
+step= 3750  loss=2.45449  learning_rate=7.17143e-07  grad_norm=5.28552
+{'loss': '2.454', 'grad_norm': '5.286', 'learning_rate': '7.171e-07', 'epoch': '7.78'}
+step= 3775  loss=1.93413  learning_rate=6.45714e-07  grad_norm=5.42319
+{'loss': '1.934', 'grad_norm': '5.423', 'learning_rate': '6.457e-07', 'epoch': '7.832'}
+step= 3800  loss=1.94266  learning_rate=5.74286e-07  grad_norm=6.99093
+{'loss': '1.943', 'grad_norm': '6.991', 'learning_rate': '5.743e-07', 'epoch': '7.884'}
+step= 3825  loss=2.16562  learning_rate=5.02857e-07  grad_norm=5.91286
+{'loss': '2.166', 'grad_norm': '5.913', 'learning_rate': '5.029e-07', 'epoch': '7.936'}
+step= 3850  loss=2.51869  learning_rate=4.31429e-07  grad_norm=4.24164
+{'loss': '2.519', 'grad_norm': '4.242', 'learning_rate': '4.314e-07', 'epoch': '7.988'}
+step= 3875  loss=2.44478  learning_rate=3.6e-07  grad_norm=3.6636
+{'loss': '2.445', 'grad_norm': '3.664', 'learning_rate': '3.6e-07', 'epoch': '8.039'}
+step= 3900  loss=2.14733  learning_rate=2.88571e-07  grad_norm=3.51211
+{'loss': '2.147', 'grad_norm': '3.512', 'learning_rate': '2.886e-07', 'epoch': '8.091'}
+step= 3925  loss=2.20146  learning_rate=2.17143e-07  grad_norm=3.93206
+{'loss': '2.201', 'grad_norm': '3.932', 'learning_rate': '2.171e-07', 'epoch': '8.143'}
+step= 3950  loss=2.02207  learning_rate=1.45714e-07  grad_norm=4.48357
+{'loss': '2.022', 'grad_norm': '4.484', 'learning_rate': '1.457e-07', 'epoch': '8.195'}
+step= 3975  loss=2.12294  learning_rate=7.42857e-08  grad_norm=6.64726
+{'loss': '2.123', 'grad_norm': '6.647', 'learning_rate': '7.429e-08', 'epoch': '8.247'}
+step= 4000  loss=2.18755  learning_rate=2.85714e-09  grad_norm=4.11615
+{'loss': '2.188', 'grad_norm': '4.116', 'learning_rate': '2.857e-09', 'epoch': '8.299'}
+step= 4000  eval_loss=0.983303  eval_wer=64.1734
+{'eval_loss': '0.9833', 'eval_wer': '64.17', 'eval_runtime': '591.4', 'eval_samples_per_second': '1.315', 'eval_steps_per_second': '1.315', 'epoch': '8.299'}
+step= 4000  train_runtime=35142.7  train_samples_per_second=1.821  train_steps_per_second=0.114
+{'train_runtime': '3.514e+04', 'train_samples_per_second': '1.821', 'train_steps_per_second': '0.114', 'train_loss': '4.252', 'epoch': '8.299'}
+
+================================================================================
+Training complete! Saving final model...
+
+✓ Best model info saved to: whisper-small-nigerian/best_model_info.json
+  Best checkpoint : ./whisper-small-nigerian/checkpoint-3000
+  Best WER        : 63.86%
+
+Generating training graphs...
+  ✓ Saved: whisper-small-nigerian/graphs_20260422_063233/train_val_loss.png
+  ✓ Saved: whisper-small-nigerian/graphs_20260422_063233/step_loss.png
+  ✓ Saved: whisper-small-nigerian/graphs_20260422_063233/eval_loss_bars.png
+  ✓ Saved: whisper-small-nigerian/graphs_20260422_063233/dashboard.png
+
+  All graphs saved to: /Users/I558118/Documents/Projects/Whisper-Ng/whisper-small-nigerian/graphs_20260422_063233
+
+Model saved to: ./whisper-small-nigerian
+
+To use your model:
+from transformers import WhisperForConditionalGeneration, WhisperProcessor
+model = WhisperForConditionalGeneration.from_pretrained("./whisper-small-nigerian")
+processor = WhisperProcessor.from_pretrained("./whisper-small-nigerian")
+
+Languages fine-tuned on: Yoruba, Hausa, Igbo, Pidgin English
+
+View training dashboard:
+  trackio show --project whisper-ng-nigerian
