@@ -43,6 +43,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Union
 import evaluate
+import re
 import matplotlib
 matplotlib.use("Agg")   # non-interactive backend — safe for training scripts
 import matplotlib.pyplot as plt
@@ -94,7 +95,7 @@ TASK = "transcribe"
 LANGUAGE_CONFIGS = [
     {"config": "yor_tts", "language": "yoruba"},
     {"config": "hau_tts", "language": "hausa"},
-    {"config": "ibo_tts", "language": "igbo"},
+    {"config": "ibo_tts", "language": None},      # Igbo is not in Whisper's 99 languages
     {"config": "pcm_tts", "language": "english"},  # Pidgin uses English tokenizer
 ]
 
@@ -109,8 +110,8 @@ TRACKIO_PROJECT = "whisper-ng-nigerian"
 # Start logging — everything printed from here on goes to terminal + log file
 # ---------------------------------------------------------------------------
 # Training hyperparameters
-BATCH_SIZE = 16  # Increased from 1 (M4 Pro 48GB can handle this easily)
-GRADIENT_ACCUMULATION_STEPS = 1 # Reduced from 16 (effective batch still 16)
+BATCH_SIZE = 4   # Reduced to avoid OOM on MPS
+GRADIENT_ACCUMULATION_STEPS = 4  # Effective batch = 4 * 4 = 16
 LEARNING_RATE = 1e-5  # Keep the reduced LR that worked well
 WARMUP_STEPS = 500
 MAX_STEPS = 4000  # Stop at best checkpoint (was 5000, overfit after this)
@@ -150,49 +151,11 @@ tokenizer = WhisperTokenizer.from_pretrained(MODEL_NAME, task=TASK)
 processor = WhisperProcessor.from_pretrained(MODEL_NAME, task=TASK)
 
 # ---------------------------------------------------------------------------
-# Load and Prepare Dataset — all 4 languages
-# ---------------------------------------------------------------------------
-
-print("Loading datasets for all 4 languages...")
-all_train, all_val, all_test = [], [], []
-
-for lang_cfg in LANGUAGE_CONFIGS:
-    cfg, lang = lang_cfg["config"], lang_cfg["language"]
-    print(f"  Loading {lang.upper()} ({cfg})...", flush=True)
-    ds = load_dataset(DATASET_NAME, cfg)
-    ds = ds.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
-    print(f"    train={len(ds['train']):,}  val={len(ds['validation']):,}  test={len(ds['test']):,}")
-    all_train.append(ds["train"])
-    all_val.append(ds["validation"])
-    all_test.append(ds["test"])
-
-print("\nCombining and shuffling all languages...", flush=True)
-combined_train = concatenate_datasets(all_train).shuffle(seed=RANDOM_SEED)
-combined_val   = concatenate_datasets(all_val).shuffle(seed=RANDOM_SEED)
-combined_test  = concatenate_datasets(all_test).shuffle(seed=RANDOM_SEED)
-
-print(f"  Combined train : {len(combined_train):,}")
-print(f"  Combined val   : {len(combined_val):,}")
-print(f"  Combined test  : {len(combined_test):,}")
-
-# Use train + val for training (maximise data), test for evaluation
-print("\nBuilding final DatasetDict...")
-common_voice = DatasetDict()
-common_voice["train"] = concatenate_datasets([combined_train, combined_val]).shuffle(seed=RANDOM_SEED)
-common_voice["test"]  = combined_test
-
-# Free the per-language lists and intermediate datasets — they are no longer needed
-# and keeping them alive doubles RAM usage during the map() step.
-del all_train, all_val, all_test, combined_train, combined_val, combined_test
-gc.collect()
-
-# ---------------------------------------------------------------------------
 # Prepare Data
 # ---------------------------------------------------------------------------
 
-def prepare_dataset(batch):
-    """Prepare a single batch for training."""
-    # Load and resample audio
+def prepare_dataset(batch, language):
+    """Prepare a single batch for training, using the explicit language."""
     audio = batch["audio"]
 
     # Compute log-Mel input features from input audio array
@@ -201,26 +164,67 @@ def prepare_dataset(batch):
         sampling_rate=audio["sampling_rate"]
     ).input_features[0]
 
-    # FIX: Add special tokens (Whisper decoder prompts like <|startoftranscript|>)
-    labels = tokenizer(batch["text"], add_special_tokens=True).input_ids
+    # EXPLICITLY set the language for the tokenizer so it adds the correct tokens
+    # e.g., <|startoftranscript|><|yo|><|transcribe|><|notimestamps|>
+    # For languages not in Whisper's vocabulary (e.g. Igbo), language=None
+    # omits the language token and just keeps the task/timestamp prefix.
+    if language is not None:
+        tokenizer.set_prefix_tokens(language=language, task=TASK)
+    else:
+        tokenizer.set_prefix_tokens(task=TASK)
 
-    # Truncate labels to max length (448 tokens for Whisper base decoder)
-    # This prevents indexing errors during training
-    max_label_length = 448
-    if len(labels) > max_label_length:
-        labels = labels[:max_label_length]
+    labels = tokenizer(
+        batch["text"], add_special_tokens=True, truncation=True, max_length=448
+    ).input_ids
 
     batch["labels"] = labels
-
     return batch
 
-print("Preprocessing dataset...")
-common_voice = common_voice.map(
-    prepare_dataset,
-    remove_columns=common_voice.column_names["train"],
-    num_proc=1
-)
-# Release any remaining in-memory audio arrays now that features are cached to disk
+# ---------------------------------------------------------------------------
+# Load and Prepare Dataset — all 4 languages
+# ---------------------------------------------------------------------------
+
+print("Loading and preprocessing datasets for all 4 languages...")
+all_train, all_val, all_test = [], [], []
+
+for lang_cfg in LANGUAGE_CONFIGS:
+    cfg, lang = lang_cfg["config"], lang_cfg["language"]
+    print(f"  Processing {(lang or cfg).upper()} ({cfg})...", flush=True)
+
+    ds = load_dataset(DATASET_NAME, cfg)
+    ds = ds.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+    print(f"    train={len(ds['train']):,}  val={len(ds['validation']):,}  test={len(ds['test']):,}")
+
+    col_names = ds["train"].column_names
+
+    # Map each split individually and free the raw audio immediately
+    for split in ["train", "validation", "test"]:
+        mapped = ds[split].map(
+            prepare_dataset,
+            fn_kwargs={"language": lang},
+            remove_columns=col_names,
+        )
+        if split == "train":
+            all_train.append(mapped)
+        elif split == "validation":
+            all_val.append(mapped)
+        else:
+            all_test.append(mapped)
+
+    # Free the raw dataset (with decoded audio) before loading the next language
+    del ds
+    gc.collect()
+
+print("\nCombining and shuffling all languages...", flush=True)
+common_voice = DatasetDict()
+common_voice["train"] = concatenate_datasets(all_train + all_val).shuffle(seed=RANDOM_SEED)
+common_voice["test"]  = concatenate_datasets(all_test).shuffle(seed=RANDOM_SEED)
+
+print(f"  Combined train : {len(common_voice['train']):,}")
+print(f"  Combined test  : {len(common_voice['test']):,}")
+
+# Free up memory
+del all_train, all_val, all_test
 gc.collect()
 
 # ---------------------------------------------------------------------------
@@ -304,19 +308,34 @@ except AttributeError:
 
     metric = WERMetric()
 
+def normalize_text(text):
+    """Lowercase and remove all punctuation for fair WER comparison."""
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    return text.strip()
+
 def compute_metrics(pred):
-    """Compute WER metric."""
+    """Compute WER metric with normalized text."""
     pred_ids = pred.predictions
     label_ids = pred.label_ids
 
     # Replace -100 with the pad_token_id
     label_ids[label_ids == -100] = tokenizer.pad_token_id
 
-    # We do not want to group tokens when computing the metrics
     pred_str = tokenizer.batch_decode(pred_ids, skip_special_tokens=True)
     label_str = tokenizer.batch_decode(label_ids, skip_special_tokens=True)
 
-    wer = 100 * metric.compute(predictions=pred_str, references=label_str)
+    # Normalize texts
+    pred_str = [normalize_text(p) for p in pred_str]
+    label_str = [normalize_text(l) for l in label_str]
+
+    # Filter out empty reference strings to prevent division by zero errors
+    valid_pairs = [(p, l) for p, l in zip(pred_str, label_str) if l.strip()]
+    if not valid_pairs:
+        return {"wer": 100.0}
+    valid_preds, valid_labels = zip(*valid_pairs)
+
+    wer = 100 * metric.compute(predictions=list(valid_preds), references=list(valid_labels))
 
     return {"wer": wer}
 
