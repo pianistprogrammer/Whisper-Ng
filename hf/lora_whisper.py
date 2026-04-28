@@ -1,9 +1,11 @@
 import os
 import sys
 import gc
+import unicodedata
 import multiprocessing as mp
 import torch
 import numpy as np
+import trackio
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass
@@ -12,6 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 from datasets import load_dataset, concatenate_datasets, DatasetDict, Audio
+from transformers.models.whisper.english_normalizer import BasicTextNormalizer
 from transformers import (
     WhisperFeatureExtractor,
     WhisperTokenizer,
@@ -73,9 +76,9 @@ SAMPLE_RATE = 16000
 # Training Hyperparameters for LoRA
 BATCH_SIZE = 16
 GRADIENT_ACCUMULATION_STEPS = 4  # Increased for larger effective batch size
-LEARNING_RATE = 1e-3  # LoRA uses much higher learning rates than full finetuning (e.g. 1e-3)
-WARMUP_STEPS = 200
-MAX_STEPS = 2000
+LEARNING_RATE = 5e-4  # Lowered to avoid collapsing diacritic predictions
+WARMUP_STEPS = 500    # Increased for better stability
+MAX_STEPS = 5000      # Increased for sufficient learning
 EVAL_STEPS = 500
 SAVE_STEPS = 500
 
@@ -107,6 +110,9 @@ processor = WhisperProcessor.from_pretrained(MODEL_NAME, task=TASK)
 # Prepare Dataset
 # ---------------------------------------------------------------------------
 def prepare_dataset(batch, language):
+    # Standardize the text to NFC format to handle mixed Yoruba diacritics
+    clean_text = unicodedata.normalize("NFC", batch["text"])
+
     audio = batch["audio"]
     batch["input_features"] = feature_extractor(
         audio["array"], sampling_rate=audio["sampling_rate"]
@@ -120,7 +126,7 @@ def prepare_dataset(batch, language):
 
     # The actual column for text in the user's data seems to be "text"
     labels = tokenizer(
-        batch["text"], add_special_tokens=True, truncation=True, max_length=448
+        clean_text, add_special_tokens=True, truncation=True, max_length=448
     ).input_ids
 
     batch["labels"] = labels
@@ -202,7 +208,7 @@ model.config.suppress_tokens = [] # Don't suppress tokens when learning a new la
 
 
 # Prepare model for standard INT8 PEFT training
-model = prepare_model_for_kbit_training(model, output_embedding_layer_name='proj_out')
+model = prepare_model_for_kbit_training(model)
 
 def make_inputs_require_grad(module, input, output):
     output.requires_grad_(True)
@@ -212,7 +218,7 @@ print("Applying LoRA...")
 config = LoraConfig(
     r=32,
     lora_alpha=64,
-    target_modules=["q_proj", "v_proj"],
+    target_modules=["q_proj", "v_proj", "k_proj", "out_proj", "fc1", "fc2"],
     lora_dropout=0.05,
     bias="none"
 )
@@ -235,6 +241,27 @@ class SavePeftModelCallback(TrainerCallback):
             os.remove(pytorch_model_path)
         return control
 
+class StepLoggerCallback(TrainerCallback):
+    """Write one structured line per logging/eval event to stdout (captured by _Tee)."""
+    def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, logs=None, **kwargs):
+        if not logs:
+            return
+            
+        trackio.log(logs)
+        
+        step = state.global_step
+        parts = [f"step={step:>5}"]
+        for key in ["loss", "learning_rate", "grad_norm",
+                    "eval_loss", "eval_wer",
+                    "train_runtime", "train_samples_per_second", "train_steps_per_second"]:
+            if key in logs:
+                val = logs[key]
+                if isinstance(val, float):
+                    parts.append(f"{key}={val:.6g}")
+                else:
+                    parts.append(f"{key}={val}")
+        print("  ".join(parts), flush=True)
+
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
@@ -245,7 +272,7 @@ training_args = Seq2SeqTrainingArguments(
     learning_rate=LEARNING_RATE,
     warmup_steps=WARMUP_STEPS,
     max_steps=MAX_STEPS,
-    evaluation_strategy="steps",
+    eval_strategy='steps',
     eval_steps=EVAL_STEPS,
     save_steps=SAVE_STEPS,
     fp16=True,  # Usually FP16 is used with 8-bit load
@@ -262,11 +289,26 @@ trainer = Seq2SeqTrainer(
     train_dataset=common_voice["train"],
     eval_dataset=common_voice["test"], # Using combined test sets
     data_collator=data_collator,
-    tokenizer=processor.feature_extractor,
-    callbacks=[SavePeftModelCallback],
+    processing_class=processor.feature_extractor,
+    callbacks=[SavePeftModelCallback, StepLoggerCallback()],
 )
 
 print("Starting training...")
+trackio.init(
+    project="whisper-ng-nigerian-lora",
+    config={
+        "model": MODEL_NAME,
+        "dataset": DATASET_NAME,
+        "batch_size": BATCH_SIZE,
+        "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
+        "learning_rate": LEARNING_RATE,
+        "warmup_steps": WARMUP_STEPS,
+        "max_steps": MAX_STEPS,
+        "peft": "LoRA (8-bit)",
+        "lora_r": 32,
+        "lora_alpha": 64
+    }
+)
 trainer.train()
 
 print(f"Training complete! Model saved to {OUTPUT_DIR}")
@@ -274,4 +316,8 @@ model.save_pretrained(OUTPUT_DIR)
 processor.save_pretrained(OUTPUT_DIR)
 
 print("\nDone! To evaluate, load the LoRA weights explicitly with PeftModel.from_pretrained()!")
+
+trackio.finish()
+_tee.close()
+print(f"\nFull training log saved to: {_LOG_PATH.resolve()}")
 
