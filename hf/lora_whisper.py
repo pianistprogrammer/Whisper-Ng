@@ -23,6 +23,7 @@ from transformers import (
     Seq2SeqTrainingArguments,
     Seq2SeqTrainer,
     TrainerCallback,
+    EarlyStoppingCallback,
     TrainerState,
     TrainerControl,
     TrainingArguments
@@ -69,6 +70,14 @@ LANGUAGE_CONFIGS = [
     {"config": "pcm_tts", "language": "english"},  # Pidgin uses English tokenizer
 ]
 
+# Additional local Common Voice datasets to merge into the finetuning pipeline
+LOCAL_DATASETS = [
+    {"dir": "datasets/cmn1qen4q00xjo107gln14ztz/cv-corpus-25.0-2026-03-09/ha", "language": "hausa"},
+    {"dir": "datasets/cmn29vsoh019amm07d95id0mo/cv-corpus-25.0-2026-03-09/yo", "language": "yoruba"},
+    {"dir": "datasets/cmn2cgr3101g2mm07mt1zagmz/cv-corpus-25.0-2026-03-09/pcm", "language": "english"},
+    {"dir": "datasets/cmn2cp3yv01h6mm07x6tl0t1i/cv-corpus-25.0-2026-03-09/ig", "language": None},
+]
+
 RANDOM_SEED = 42
 OUTPUT_DIR = "./whisper-small-nigerian-lora"
 SAMPLE_RATE = 16000
@@ -76,11 +85,11 @@ SAMPLE_RATE = 16000
 # Training Hyperparameters for LoRA
 BATCH_SIZE = 16
 GRADIENT_ACCUMULATION_STEPS = 4  # Increased for larger effective batch size
-LEARNING_RATE = 5e-4  # Lowered to avoid collapsing diacritic predictions
-WARMUP_STEPS = 500    # Increased for better stability
-MAX_STEPS = 5000      # Increased for sufficient learning
-EVAL_STEPS = 500
-SAVE_STEPS = 500
+LEARNING_RATE = 1e-4  # Lowered more to prevent extremely fast overfitting
+WARMUP_STEPS = 50     # Scaled down to match frequent evals
+MAX_STEPS = 1000      # 1000 steps is plenty (approx 125 epochs)
+EVAL_STEPS = 40       # Evaluate frequently to catch the lowest validation loss
+SAVE_STEPS = 40
 
 IS_WINDOWS = os.name == "nt"
 PREPROCESS_NUM_PROC = None if IS_WINDOWS else max(1, min(8, (os.cpu_count() or 1) - 1))
@@ -135,10 +144,11 @@ def prepare_dataset(batch, language):
 print("Loading and preprocessing datasets for all 4 languages...")
 all_train, all_val, all_test = [], [], []
 
+# HF Datasets (WaxalNLP)
 for lang_cfg in LANGUAGE_CONFIGS:
     cfg, lang = lang_cfg["config"], lang_cfg["language"]
     lang_str = str(lang).upper() if lang else "NONE"
-    print(f"  Processing {lang_str} ({cfg})...", flush=True)
+    print(f"  Processing [HF] {lang_str} ({cfg})...", flush=True)
     
     ds = load_dataset(DATASET_NAME, cfg)
     ds = ds.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
@@ -153,6 +163,43 @@ for lang_cfg in LANGUAGE_CONFIGS:
     all_train.append(ds["train"])
     all_val.append(ds["validation"])
     all_test.append(ds["test"])
+
+# Local Common Voice Datasets
+for lang_cfg in LOCAL_DATASETS:
+    p = lang_cfg["dir"]
+    lang = lang_cfg["language"]
+    lang_str = str(lang).upper() if lang else "NONE"
+    if not os.path.exists(p):
+        continue
+        
+    print(f"  Processing [Local] {lang_str} ({p})...", flush=True)
+    for split in ["train", "test"]:
+        tsv_path = os.path.join(p, f"{split}.tsv")
+        if not os.path.exists(tsv_path):
+            continue
+            
+        clips_dir = os.path.join(p, "clips")
+        ds_local = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train")
+        
+        def _add_audio_path(batch):
+            batch["audio"] = os.path.join(clips_dir, str(batch["path"]))
+            batch["text"] = str(batch["sentence"])
+            return batch
+            
+        # Map fields to match Audio structure
+        ds_local = ds_local.map(_add_audio_path)
+        ds_local = ds_local.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+        ds_local = ds_local.map(
+            prepare_dataset,
+            fn_kwargs={"language": lang},
+            remove_columns=ds_local.column_names,
+            num_proc=PREPROCESS_NUM_PROC,
+        )
+        
+        if split == "train":
+            all_train.append(ds_local)
+        else:
+            all_test.append(ds_local)
 
 combined_train = concatenate_datasets(all_train).shuffle(seed=RANDOM_SEED)
 combined_val   = concatenate_datasets(all_val).shuffle(seed=RANDOM_SEED)
@@ -281,6 +328,10 @@ training_args = Seq2SeqTrainingArguments(
     remove_unused_columns=False,
     label_names=["labels"],
     predict_with_generate=False, # Cannot use generate during training loop with 8-bit PEFT
+    load_best_model_at_end=True,     # <--- ADDED: Early Stopping 
+    metric_for_best_model="eval_loss",
+    greater_is_better=False,
+    save_total_limit=2,              # <--- Avoid saving 100s of checkpoints
 )
 
 trainer = Seq2SeqTrainer(
@@ -290,7 +341,7 @@ trainer = Seq2SeqTrainer(
     eval_dataset=common_voice["test"], # Using combined test sets
     data_collator=data_collator,
     processing_class=processor.feature_extractor,
-    callbacks=[SavePeftModelCallback, StepLoggerCallback()],
+    callbacks=[SavePeftModelCallback, StepLoggerCallback(), EarlyStoppingCallback(early_stopping_patience=3)],
 )
 
 print("Starting training...")
