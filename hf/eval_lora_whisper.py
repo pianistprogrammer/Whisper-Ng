@@ -114,25 +114,43 @@ for lang_cfg in LANGUAGE_CONFIGS:
     
     datasets_to_concat = [ds_hf]
     
-    # 2. Load Local Common Voice Test Split
+    # 2. Load Local Common Voice Test Split (Using the specific 15% seed to match validation)
     local_dir = lang_cfg.get("local_dir")
     if local_dir and os.path.exists(local_dir):
-        tsv_path = os.path.join(local_dir, "test.tsv")
-        if os.path.exists(tsv_path):
-            clips_dir = os.path.join(local_dir, "clips")
-            ds_local = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train") # Loads the file itself
+        # We must load both train and test to recreate the monolithic dataset
+        local_subsets = []
+        for split in ["train", "test"]:
+            tsv_path = os.path.join(local_dir, f"{split}.tsv")
+            if os.path.exists(tsv_path):
+                ds_sub = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train")
+                local_subsets.append(ds_sub)
+                
+        if local_subsets:
+            ds_local = concatenate_datasets(local_subsets)
             
+            # Apply the exact same 70/15/15 mathematical split logic using the same RANDOM_SEED!
+            RANDOM_SEED = 42
+            splits_1 = ds_local.train_test_split(train_size=0.70, seed=RANDOM_SEED)
+            splits_2 = splits_1["test"].train_test_split(train_size=0.50, seed=RANDOM_SEED)
+            
+            # Extract ONLY the 15% specifically designated for final held-out Testing
+            ds_local_test = splits_2["test"]
+            
+            clips_dir = os.path.join(local_dir, "clips")
             def _add_audio_path(batch):
                 batch["audio"] = os.path.join(clips_dir, str(batch["path"]))
                 batch["text"] = str(batch["sentence"])
                 return batch
             
-            ds_local = ds_local.map(_add_audio_path)
-            ds_local = ds_local.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
-            ds_local = ds_local.select_columns(["audio", "text"])
+            ds_local_test = ds_local_test.map(_add_audio_path)
+            ds_local_test = ds_local_test.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+            ds_local_test = ds_local_test.select_columns(["audio", "text"])
             
-            datasets_to_concat.append(ds_local)
+            datasets_to_concat.append(ds_local_test)
             
+    if not datasets_to_concat:
+        continue
+        
     ds = concatenate_datasets(datasets_to_concat)
     
     # Configure processor tokenizer for correct label generation
