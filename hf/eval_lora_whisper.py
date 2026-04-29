@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from transformers import WhisperProcessor, WhisperForConditionalGeneration, BitsAndBytesConfig
 from transformers.models.whisper.english_normalizer import BasicTextNormalizer
 from peft import PeftModel, PeftConfig
-from datasets import load_dataset, Audio
+from datasets import load_dataset, Audio, concatenate_datasets
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 
@@ -24,10 +24,10 @@ SAMPLE_RATE = 16000
 BATCH_SIZE = 16
 
 LANGUAGE_CONFIGS = [
-    {"config": "yor_tts", "language": "yoruba"},
-    {"config": "hau_tts", "language": "hausa"},
-    {"config": "ibo_tts", "language": None},  # Igbo unset as in training
-    {"config": "pcm_tts", "language": "english"},
+    {"config": "yor_tts", "language": "yoruba", "local_dir": "datasets/cmn29vsoh019amm07d95id0mo/cv-corpus-25.0-2026-03-09/yo"},
+    {"config": "hau_tts", "language": "hausa", "local_dir": "datasets/cmn1qen4q00xjo107gln14ztz/cv-corpus-25.0-2026-03-09/ha"},
+    {"config": "ibo_tts", "language": None, "local_dir": "datasets/cmn2cp3yv01h6mm07x6tl0t1i/cv-corpus-25.0-2026-03-09/ig"},  # Igbo unset as in training
+    {"config": "pcm_tts", "language": "english", "local_dir": "datasets/cmn2cgr3101g2mm07mt1zagmz/cv-corpus-25.0-2026-03-09/pcm"},
 ]
 
 # ---------------------------------------------------------------------------
@@ -84,9 +84,13 @@ data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
 normalizer = BasicTextNormalizer(remove_diacritics=False)
 
 def normalize_text(text):
-    # Standardize to NFC first, then apply the HF BasicTextNormalizer
-    clean_text = unicodedata.normalize("NFC", text)
-    return normalizer(clean_text).strip()
+    # Standardize to NFC first, then lowercase
+    clean_text = unicodedata.normalize("NFC", text).lower()
+    # Strip punctuation but keep word characters and whitespace
+    clean_text = re.sub(r'[^\w\s]', '', clean_text)
+    # Collapse multiple spaces
+    clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+    return clean_text
 
 metric = evaluate.load("wer")
 all_predictions = []
@@ -102,8 +106,34 @@ for lang_cfg in LANGUAGE_CONFIGS:
     lang_str = str(lang).upper() if lang else "NONE"
     
     print(f"\nEvaluating: {lang_str} ({cfg})")
-    ds = load_dataset(DATASET_NAME, cfg, split="test")
-    ds = ds.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+    
+    # 1. Load HF Test Split
+    ds_hf = load_dataset(DATASET_NAME, cfg, split="test").cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+    # Ensure they have uniform schema to avoid concatenation issues
+    ds_hf = ds_hf.select_columns(["audio", "text"])
+    
+    datasets_to_concat = [ds_hf]
+    
+    # 2. Load Local Common Voice Test Split
+    local_dir = lang_cfg.get("local_dir")
+    if local_dir and os.path.exists(local_dir):
+        tsv_path = os.path.join(local_dir, "test.tsv")
+        if os.path.exists(tsv_path):
+            clips_dir = os.path.join(local_dir, "clips")
+            ds_local = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train") # Loads the file itself
+            
+            def _add_audio_path(batch):
+                batch["audio"] = os.path.join(clips_dir, str(batch["path"]))
+                batch["text"] = str(batch["sentence"])
+                return batch
+            
+            ds_local = ds_local.map(_add_audio_path)
+            ds_local = ds_local.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+            ds_local = ds_local.select_columns(["audio", "text"])
+            
+            datasets_to_concat.append(ds_local)
+            
+    ds = concatenate_datasets(datasets_to_concat)
     
     # Configure processor tokenizer for correct label generation
     if lang is not None:
@@ -131,7 +161,7 @@ for lang_cfg in LANGUAGE_CONFIGS:
     references = []
     
     for step, batch in enumerate(tqdm(eval_dataloader, desc=f"Evaluating {lang_str}")):
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast('cuda'):
             with torch.no_grad():
                 generated_tokens = model.generate(
                     input_features=batch["input_features"].to("cuda"),
@@ -144,6 +174,9 @@ for lang_cfg in LANGUAGE_CONFIGS:
                 
                 decoded_preds = processor.tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
                 decoded_labels = processor.tokenizer.batch_decode(labels, skip_special_tokens=True)
+                
+                if step == 0:
+                    print(f"\n[SAMPLE] REF : {decoded_labels[0]}\n[SAMPLE] PRED: {decoded_preds[0]}\n")
                 
                 predictions.extend(decoded_preds)
                 references.extend(decoded_labels)

@@ -14,6 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 
 from datasets import load_dataset, concatenate_datasets, DatasetDict, Audio
+import pandas as pd
 from transformers.models.whisper.english_normalizer import BasicTextNormalizer
 from transformers import (
     WhisperFeatureExtractor,
@@ -173,33 +174,49 @@ for lang_cfg in LOCAL_DATASETS:
         continue
         
     print(f"  Processing [Local] {lang_str} ({p})...", flush=True)
+    
+    # Load and combine any existing train/test tsv files
+    clips_dir = os.path.join(p, "clips")
+    local_subsets = []
+    
     for split in ["train", "test"]:
         tsv_path = os.path.join(p, f"{split}.tsv")
-        if not os.path.exists(tsv_path):
-            continue
+        if os.path.exists(tsv_path):
+            ds_sub = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train")
+            local_subsets.append(ds_sub)
             
-        clips_dir = os.path.join(p, "clips")
-        ds_local = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train")
+    if not local_subsets:
+        continue
         
-        def _add_audio_path(batch):
-            batch["audio"] = os.path.join(clips_dir, str(batch["path"]))
-            batch["text"] = str(batch["sentence"])
-            return batch
-            
-        # Map fields to match Audio structure
-        ds_local = ds_local.map(_add_audio_path)
-        ds_local = ds_local.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
-        ds_local = ds_local.map(
-            prepare_dataset,
-            fn_kwargs={"language": lang},
-            remove_columns=ds_local.column_names,
-            num_proc=PREPROCESS_NUM_PROC,
-        )
+    ds_local = concatenate_datasets(local_subsets)
+    
+    # Add audio path and text mapping
+    def _add_audio_path(batch):
+        batch["audio"] = os.path.join(clips_dir, str(batch["path"]))
+        batch["text"] = str(batch["sentence"])
+        return batch
         
-        if split == "train":
-            all_train.append(ds_local)
-        else:
-            all_test.append(ds_local)
+    ds_local = ds_local.map(_add_audio_path)
+    ds_local = ds_local.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
+    ds_local = ds_local.select_columns(["audio", "text", "sentence", "path"]) # clean up metadata
+    
+    ds_local = ds_local.map(
+        prepare_dataset,
+        fn_kwargs={"language": lang},
+        remove_columns=ds_local.column_names,
+        num_proc=PREPROCESS_NUM_PROC,
+    )
+    
+    # Mathematical Dataset Resplit (70% Train, 15% Validation, 15% Test)
+    # The percentages sum exactly to 100%
+    # Step 1: Extract 70% for Train
+    splits_1 = ds_local.train_test_split(train_size=0.70, seed=RANDOM_SEED)
+    all_train.append(splits_1["train"])
+    
+    # Step 2: Split the remaining 30% into Validation (15/30 = 0.5) and Test (15/30 = 0.5)
+    splits_2 = splits_1["test"].train_test_split(train_size=0.50, seed=RANDOM_SEED)
+    all_val.append(splits_2["train"])
+    all_test.append(splits_2["test"])
 
 combined_train = concatenate_datasets(all_train).shuffle(seed=RANDOM_SEED)
 combined_val   = concatenate_datasets(all_val).shuffle(seed=RANDOM_SEED)

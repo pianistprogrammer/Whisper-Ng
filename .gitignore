@@ -4,16 +4,26 @@ yoruba_whisper_lora/
 test_output_3samples/
 multilingual_whisper_lora/
 whisper-base-nigerian/
-whisper-small-nigerian/
-whisper-small-nigerian-lora/
+# Allow training output directories so small configs/logs can be tracked:
+# whisper-small-nigerian/
+# whisper-small-nigerian-lora/
+
 # Generic catch-all for any future checkpoint / output dirs
 hf/whisper-*/
 hf/multilingual_*/
 mlx/multilingual_*/
 mlx/whisper-*/
+
+# Large Model Weights & States (Excluded)
 *.safetensors
 *.pt
+*.pth
 *.npz
+
+# Allow specific text logs inside the training folders (overriding global .txt exclusion below)
+!whisper-small-nigerian/*.txt
+!whisper-small-nigerian-lora/*.txt
+!whisper-small-nigerian/**/*.json
 
 # Logs
 *.txt
