@@ -123,6 +123,7 @@ for lang_cfg in LANGUAGE_CONFIGS:
             tsv_path = os.path.join(local_dir, f"{split}.tsv")
             if os.path.exists(tsv_path):
                 ds_sub = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train")
+                ds_sub = ds_sub.select_columns(["path", "sentence"])
                 local_subsets.append(ds_sub)
                 
         if local_subsets:

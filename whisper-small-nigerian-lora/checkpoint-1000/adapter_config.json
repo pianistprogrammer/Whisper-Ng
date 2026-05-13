@@ -34,9 +34,9 @@
   "revision": null,
   "target_modules": [
     "fc1",
+    "q_proj",
     "v_proj",
     "out_proj",
-    "q_proj",
     "fc2",
     "k_proj"
   ],

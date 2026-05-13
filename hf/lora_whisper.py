@@ -179,10 +179,20 @@ for lang_cfg in LOCAL_DATASETS:
     clips_dir = os.path.join(p, "clips")
     local_subsets = []
     
+    import datasets
     for split in ["train", "test"]:
         tsv_path = os.path.join(p, f"{split}.tsv")
         if os.path.exists(tsv_path):
             ds_sub = load_dataset("csv", data_files=tsv_path, delimiter="\t", split="train")
+            # Force uniform schema on load to prevent concatenation alignment errors
+            ds_sub = ds_sub.cast_column("sentence_domain", datasets.Value("string")) if "sentence_domain" in ds_sub.features else ds_sub
+            ds_sub = ds_sub.cast_column("accents", datasets.Value("string")) if "accents" in ds_sub.features else ds_sub
+            ds_sub = ds_sub.cast_column("variant", datasets.Value("string")) if "variant" in ds_sub.features else ds_sub
+            ds_sub = ds_sub.cast_column("segment", datasets.Value("string")) if "segment" in ds_sub.features else ds_sub
+            
+            # Since we only actually use "sentence" and "path", an even safer approach is:
+            ds_sub = ds_sub.select_columns(["path", "sentence"])
+            
             local_subsets.append(ds_sub)
             
     if not local_subsets:
@@ -198,7 +208,7 @@ for lang_cfg in LOCAL_DATASETS:
         
     ds_local = ds_local.map(_add_audio_path)
     ds_local = ds_local.cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
-    ds_local = ds_local.select_columns(["audio", "text", "sentence", "path"]) # clean up metadata
+    ds_local = ds_local.select_columns(["audio", "text"]) # clean up metadata
     
     ds_local = ds_local.map(
         prepare_dataset,
