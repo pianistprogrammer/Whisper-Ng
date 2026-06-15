@@ -5,6 +5,7 @@ import torch
 import unicodedata
 import evaluate
 import numpy as np
+import json
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from transformers import WhisperProcessor, WhisperForConditionalGeneration, BitsAndBytesConfig
@@ -97,15 +98,17 @@ all_predictions = []
 all_references = []
 all_normalized_predictions = []
 all_normalized_references = []
+samples_output = {}
 
 model.eval()
 
 for lang_cfg in LANGUAGE_CONFIGS:
     cfg = lang_cfg["config"]
     lang = lang_cfg["language"]
-    lang_str = str(lang).upper() if lang else "NONE"
+    lang_str = str(lang).upper() if lang else "IGBO" # Setting default string for display
     
     print(f"\nEvaluating: {lang_str} ({cfg})")
+    samples_output[lang_str] = []
     
     # 1. Load HF Test Split
     ds_hf = load_dataset(DATASET_NAME, cfg, split="test").cast_column("audio", Audio(sampling_rate=SAMPLE_RATE))
@@ -197,6 +200,15 @@ for lang_cfg in LANGUAGE_CONFIGS:
                 if step == 0:
                     print(f"\n[SAMPLE] REF : {decoded_labels[0]}\n[SAMPLE] PRED: {decoded_preds[0]}\n")
                 
+                # Collect samples for JSON output
+                if len(samples_output[lang_str]) < 10:
+                    for r, p in zip(decoded_labels, decoded_preds):
+                        if len(samples_output[lang_str]) < 10:
+                            samples_output[lang_str].append({
+                                "expected": r,
+                                "transcribed": p
+                            })
+
                 predictions.extend(decoded_preds)
                 references.extend(decoded_labels)
 
@@ -233,3 +245,9 @@ print("\n=======================================================================
 print(f"Final Word Error Rate (WER)            : {final_wer:.2f}%")
 print(f"Final Normalized WER (Lower is better) : {final_norm_wer:.2f}%")
 print("================================================================================")
+
+# Write samples to JSON
+output_file = "eval_samples.json"
+print(f"Writing samples to {output_file}...")
+with open(output_file, "w", encoding="utf-8") as f:
+    json.dump(samples_output, f, indent=4, ensure_ascii=False)
