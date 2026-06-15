@@ -306,6 +306,7 @@ def evaluate_language(lang_cfg: dict, model, processor, data_collator, metric, d
 # Main
 # ---------------------------------------------------------------------------
 def main():
+    global BATCH_SIZE, DEFAULT_PEFT_MODEL_ID
     parser = argparse.ArgumentParser(description="Evaluate Whisper LoRA fine-tune")
     parser.add_argument(
         "--model",
@@ -332,9 +333,7 @@ def main():
     )
     args = parser.parse_args()
 
-    global BATCH_SIZE, DEFAULT_PEFT_MODEL_ID
     BATCH_SIZE = args.batch_size
-    DEFAULT_PEFT_MODEL_ID = args.model
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -345,8 +344,10 @@ def main():
         lang_cfgs = [c for c in LANGUAGE_CONFIGS if c["key"] in args.langs]
 
     # ── Load model ──────────────────────────────────────────────────────────
-    print(f"Loading PEFT config from {args.model} ...")
-    peft_config = PeftConfig.from_pretrained(args.model)
+    model_path = str(Path(args.model).resolve())
+    DEFAULT_PEFT_MODEL_ID = model_path
+    print(f"Loading PEFT config from {model_path} ...")
+    peft_config = PeftConfig.from_pretrained(model_path)
     processor = WhisperProcessor.from_pretrained(
         peft_config.base_model_name_or_path, task=TASK
     )
@@ -367,7 +368,7 @@ def main():
         ).to(device)
 
     print("Attaching LoRA adapters ...")
-    model = PeftModel.from_pretrained(base_model, args.model)
+    model = PeftModel.from_pretrained(base_model, model_path)
     model.config.use_cache = True
     model.generation_config.forced_decoder_ids = None
     model.generation_config.suppress_tokens = []
