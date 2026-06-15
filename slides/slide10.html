@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg { width:100%; height:100%; background:#050d08; position:relative; display:flex; }
+
+  /* Ambient glow */
+  .glow { position:absolute; width:1000px; height:1000px; border-radius:50%; top:50%; left:50%; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(0,200,80,0.07) 0%, transparent 65%); pointer-events:none; }
+
+  .left {
+    width:760px; flex-shrink:0; padding:80px 80px;
+    display:flex; flex-direction:column; justify-content:center;
+    border-right: 1px solid rgba(0,200,80,0.1);
+    position:relative; z-index:1;
+  }
+
+  .eyebrow { display:inline-flex; align-items:center; gap:10px; background:rgba(0,200,80,0.1); border:1px solid rgba(0,200,80,0.25); border-radius:100px; padding:8px 18px; margin-bottom:28px; width:fit-content; }
+  .eyebrow-dot { width:8px; height:8px; border-radius:50%; background:#00c851; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .eyebrow span { font-size:12px; font-weight:600; color:#00c851; text-transform:uppercase; letter-spacing:0.07em; }
+
+  h2 { font-size:52px; font-weight:800; color:white; line-height:1.05; letter-spacing:-1.5px; margin-bottom:20px; }
+  h2 em { font-style:normal; color:#00d65a; }
+
+  .lead { font-size:17px; color:rgba(255,255,255,0.45); line-height:1.65; margin-bottom:32px; }
+
+  .steps { display:flex; flex-direction:column; gap:14px; margin-bottom:32px; }
+  .step { display:flex; align-items:flex-start; gap:14px; }
+  .step-num { width:28px; height:28px; border-radius:50%; background:rgba(0,200,80,0.2); border:1px solid rgba(0,200,80,0.4); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#00d65a; flex-shrink:0; margin-top:1px; }
+  .step-text { font-size:16px; color:rgba(255,255,255,0.6); line-height:1.5; }
+  .step-text strong { color:white; }
+
+  .url-card {
+    background: rgba(0,200,80,0.1); border:1px solid rgba(0,200,80,0.3); border-radius:14px; padding:20px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .url-label { font-size:13px; color:rgba(0,220,90,0.6); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:4px; }
+  .url-val { font-size:22px; font-weight:700; color:#00d65a; }
+  .url-arrow { font-size:28px; color:rgba(0,200,80,0.5); }
+
+  /* Right */
+  .right { flex:1; padding:72px 80px; display:flex; flex-direction:column; justify-content:center; gap:20px; position:relative; z-index:1; }
+
+  .section-label { font-size:12px; font-weight:600; color:rgba(255,255,255,0.2); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px; }
+
+  .impact-card {
+    background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    border-radius:18px; padding:28px 32px;
+  }
+  .impact-title { font-size:18px; font-weight:700; color:white; margin-bottom:20px; }
+
+  .impact-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .ig {
+    background: rgba(0,200,80,0.06); border:1px solid rgba(0,200,80,0.15);
+    border-radius:12px; padding:18px 20px;
+  }
+  .ig-label { font-size:12px; font-weight:600; color:rgba(0,220,90,0.5); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px; }
+  .ig-val { font-size:20px; font-weight:700; color:white; }
+  .ig-sub { font-size:13px; color:rgba(255,255,255,0.35); margin-top:3px; }
+
+  .why-card {
+    background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    border-radius:18px; padding:28px 32px;
+  }
+  .why-title { font-size:18px; font-weight:700; color:white; margin-bottom:16px; }
+  .why-body { font-size:16px; color:rgba(255,255,255,0.45); line-height:1.65; }
+  .why-body strong { color:#00d65a; }
+
+  .slide-num { position:absolute; bottom:40px; right:40px; font-size:13px; color:rgba(255,255,255,0.2); }
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="glow"></div>
+
+  <div class="left">
+    <div class="eyebrow">
+      <div class="eyebrow-dot"></div>
+      <span>Community Data Collection</span>
+    </div>
+
+    <h2>Closing the Gap<br>Takes a <em>Community</em></h2>
+
+    <p class="lead">No algorithm can substitute for missing data. The crowdsourcing platform puts the solution in the hands of the people who speak these languages every day.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Record</strong> — speakers submit short audio clips in their native language</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Tag</strong> — contributions labelled by language and dialect</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Validate</strong> — community review ensures transcription quality</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text"><strong>Train</strong> — verified audio feeds directly into the next Whisper fine-tune</div>
+      </div>
+    </div>
+
+    <div class="url-card">
+      <div>
+        <div class="url-label">Crowdsourcing Platform</div>
+        <div class="url-val">ngs.primeeralabs.com</div>
+      </div>
+      <div class="url-arrow">→</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="section-label">Platform Goals</div>
+    <div class="impact-card">
+      <div class="impact-title">What We're Building Towards</div>
+      <div class="impact-grid">
+        <div class="ig">
+          <div class="ig-label">Target Corpus</div>
+          <div class="ig-val">10,000+</div>
+          <div class="ig-sub">samples per language by 2027</div>
+        </div>
+        <div class="ig">
+          <div class="ig-label">Languages Covered</div>
+          <div class="ig-val">4 + dialects</div>
+          <div class="ig-sub">Hausa · Yoruba · Igbo · Pidgin</div>
+        </div>
+        <div class="ig">
+          <div class="ig-label">Current Gap</div>
+          <div class="ig-val">~32K</div>
+          <div class="ig-sub">samples across all 4 languages today</div>
+        </div>
+        <div class="ig">
+          <div class="ig-label">Impact</div>
+          <div class="ig-val">Continuous</div>
+          <div class="ig-sub">model retraining with new submissions</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="why-card">
+      <div class="why-title">Why Community Sourcing Is the Only Path</div>
+      <div class="why-body">
+        Google and Mozilla have made significant contributions, but <strong>Nigerian voices in those datasets are still a fraction of what's needed</strong>. Academic datasets lack the dialectal range and conversational naturalness of real speech. Only a platform designed for and by Nigerian speakers can produce the data that will make AI truly inclusive.
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">10 / 13</div>
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

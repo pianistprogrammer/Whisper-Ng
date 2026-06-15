@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg {
+    width:100%; height:100%;
+    background: linear-gradient(135deg, #030a05 0%, #071408 40%, #0a1a08 100%);
+    position:relative;
+  }
+  .bg::before { content:''; position:absolute; inset:0; background-image: linear-gradient(rgba(0,200,80,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,80,0.025) 1px, transparent 1px); background-size:80px 80px; }
+
+  /* Large glow */
+  .glow1 { position:absolute; width:900px; height:900px; border-radius:50%; top:-300px; right:-200px; background:radial-gradient(circle, rgba(0,200,80,0.12) 0%, transparent 65%); }
+  .glow2 { position:absolute; width:600px; height:600px; border-radius:50%; bottom:-200px; left:-100px; background:radial-gradient(circle, rgba(0,100,200,0.06) 0%, transparent 65%); }
+
+  .content { position:absolute; inset:0; display:flex; align-items:center; justify-content:space-between; padding:0 120px; gap:60px; }
+
+  .left { flex:1; max-width:740px; }
+
+  .label { font-size:13px; font-weight:600; color:rgba(0,220,90,0.5); text-transform:uppercase; letter-spacing:0.12em; margin-bottom:20px; }
+
+  h1 { font-size:88px; font-weight:900; color:white; line-height:0.95; letter-spacing:-3px; margin-bottom:32px; }
+  h1 span { color:#00d65a; display:block; }
+
+  .quote {
+    font-size:24px; font-style:italic; color:rgba(255,255,255,0.4);
+    line-height:1.5; margin-bottom:48px;
+    padding-left:24px;
+    border-left:3px solid rgba(0,200,80,0.4);
+    max-width:700px;
+  }
+
+  .author { display:flex; align-items:center; gap:20px; }
+  .avatar { width:60px; height:60px; border-radius:50%; background:linear-gradient(135deg,#00c851,#007a32); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; color:white; flex-shrink:0; }
+  .author-name { font-size:20px; font-weight:700; color:white; }
+  .author-role { font-size:14px; color:rgba(255,255,255,0.35); margin-top:3px; }
+
+  /* Right links */
+  .right { width:680px; display:flex; flex-direction:column; gap:14px; }
+
+  .link-card {
+    background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+    border-radius:16px; padding:22px 28px;
+    display:flex; align-items:center; gap:20px;
+  }
+  .link-card.primary {
+    background: rgba(0,200,80,0.12);
+    border-color: rgba(0,200,80,0.5);
+    border-width: 2px;
+    box-shadow: 0 0 40px rgba(0,200,80,0.15);
+  }
+  .link-icon { font-size:22px; flex-shrink:0; }
+  .link-label { font-size:12px; font-weight:600; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px; }
+  .link-url { font-size:17px; font-weight:600; color:white; }
+  .link-card.primary .link-label { font-size:14px; color:rgba(0,220,90,0.7); letter-spacing:0.1em; margin-bottom:10px; }
+  .link-card.primary .link-url { font-size:36px; font-weight:800; color:#00ff88; letter-spacing:-0.5px; }
+  .link-card.primary .link-icon { font-size:36px; }
+  .link-arrow { margin-left:auto; font-size:20px; color:rgba(255,255,255,0.2); }
+  .link-card.primary .link-arrow { font-size:32px; color:rgba(0,200,80,0.7); }
+
+  .divider { height:1px; background:linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent); margin:4px 0; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+  .slide-num { position:absolute; bottom:24px; right:40px; font-size:13px; color:rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="glow1"></div>
+  <div class="glow2"></div>
+
+  <div class="content">
+    <div class="left">
+      <div class="label">Thank You</div>
+
+      <h1>Let's Build<br><span>AI That Hears</span><br>Everyone.</h1>
+
+      <div class="quote">
+        "If it doesn't understand me, is it really intelligent?"
+      </div>
+
+      <div class="author">
+        <div class="avatar">AJ</div>
+        <div>
+          <div class="author-name">Dr. Abimbola Jeremiah</div>
+          <div class="author-role">Assistant Professor · Silesian University of Technology, Poland · June 2026</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="link-card primary">
+        <div class="link-icon">🌐</div>
+        <div>
+          <div class="link-label">Contribute Your Voice — Crowdsourcing Platform</div>
+          <div class="link-url">https://ngs.primeeralabs.com</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </div>
+
+      <div class="link-card">
+        <div class="link-icon">💻</div>
+        <div>
+          <div class="link-label">Source Code</div>
+          <div class="link-url">github.com/pianistprogrammer/Whisper-Ng</div>
+        </div>
+        <div class="link-arrow">→</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="link-card">
+        <div class="link-icon">🤗</div>
+        <div>
+          <div class="link-label">Base Model</div>
+          <div class="link-url">openai/whisper-small</div>
+        </div>
+      </div>
+
+      <div class="link-card">
+        <div class="link-icon">📦</div>
+        <div>
+          <div class="link-label">Datasets</div>
+          <div class="link-url">google/WaxalNLP · Mozilla Common Voice</div>
+        </div>
+      </div>
+
+      <div class="link-card">
+        <div class="link-icon">📧</div>
+        <div>
+          <div class="link-label">Questions & Collaboration</div>
+          <div class="link-url">Open to partnerships &amp; feedback</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">13 / 13</div>
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

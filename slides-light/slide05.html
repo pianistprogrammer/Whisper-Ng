@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+
+  .bg {
+    width: 100%; height: 100%;
+    background: #ffffff;
+    position: relative; display: flex;
+  }
+
+  .left {
+    width: 760px; flex-shrink: 0;
+    padding: 80px 80px;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative;
+  }
+  .left::after {
+    content: ''; position: absolute; right: 0; top: 10%; bottom: 10%;
+    width: 1px; background: linear-gradient(transparent, rgba(0,0,0,0.08), transparent);
+  }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,180,60,0.08); border: 1px solid rgba(0,200,80,0.25);
+    border-radius: 100px; padding: 7px 16px; margin-bottom: 28px; width: fit-content;
+  }
+  .tag span { font-size: 12px; font-weight: 600; color: #00c851; text-transform: uppercase; letter-spacing: 0.07em; }
+
+  h2 { font-size: 50px; font-weight: 800; color: #0d1f12; line-height: 1.05; letter-spacing: -1.5px; margin-bottom: 24px; }
+  h2 em { font-style: normal; color: #00d65a; }
+
+  .lead { font-size: 17px; color: rgba(0,20,10,0.6); line-height: 1.65; margin-bottom: 36px; }
+
+  .key-points { display: flex; flex-direction: column; gap: 14px; }
+  .kp {
+    display: flex; align-items: flex-start; gap: 14px;
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px; padding: 16px 20px;
+  }
+  .kp-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: #00d65a;
+    flex-shrink: 0; margin-top: 6px;
+  }
+  .kp-text { font-size: 15px; color: rgba(0,20,10,0.55); line-height: 1.5; }
+  .kp-text strong { color: #0d1f12; }
+
+  /* Right — pipeline */
+  .right {
+    flex: 1; padding: 60px 80px 60px 60px;
+    display: flex; flex-direction: column; justify-content: center; gap: 20px;
+  }
+
+  .right-label { font-size: 12px; font-weight: 600; color: rgba(0,20,10,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+
+  /* Pipeline */
+  .pipeline {
+    display: flex; align-items: center; gap: 0; margin-bottom: 8px;
+  }
+  .pipe-step {
+    flex: 1;
+    background: rgba(0,0,0,0.04);
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 14px; padding: 18px 16px;
+    text-align: center; position: relative;
+  }
+  .pipe-step.active {
+    background: linear-gradient(135deg, rgba(0,180,60,0.3), rgba(0,100,30,0.2));
+    border-color: rgba(0,200,80,0.6);
+  }
+  .pipe-step.frozen {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(255,255,255,0.18);
+    opacity: 1;
+  }
+  .pipe-icon { font-size: 22px; margin-bottom: 8px; }
+  .pipe-name { font-size: 13px; font-weight: 700; color: #0d1f12; margin-bottom: 4px; }
+  .pipe-sub { font-size: 11px; color: rgba(0,20,10,0.6); }
+  .pipe-badge {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: #00c851; border-radius: 100px; padding: 3px 10px;
+    font-size: 10px; font-weight: 700; color: #000; white-space: nowrap;
+  }
+  .arrow { font-size: 18px; color: rgba(0,20,10,0.5); padding: 0 8px; flex-shrink: 0; }
+
+  /* Config cards */
+  .configs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cfg {
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 14px; padding: 20px 22px;
+  }
+  .cfg-title { font-size: 13px; font-weight: 600; color: rgba(0,20,10,0.65); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 12px; }
+  .cfg-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .cfg-key { font-size: 13px; color: rgba(0,20,10,0.6); font-family: 'JetBrains Mono', monospace; }
+  .cfg-val { font-size: 13px; font-weight: 600; color: #00d65a; font-family: 'JetBrains Mono', monospace; }
+
+  .slide-num { position: absolute; bottom: 40px; right: 40px; font-size: 13px; color: rgba(0,20,10,0.3); }
+  .bottom-bar { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #00c851 0%, transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="left">
+    <div class="tag"><span>Technical Approach</span></div>
+    <h2>Fine-Tuning With<br><em>LoRA</em> — Less is More</h2>
+    <p class="lead">Low-Rank Adaptation inserts tiny trainable matrices into Whisper's attention layers. The rest of the model stays frozen. The result: full adaptation at a fraction of the cost.</p>
+    <div class="key-points">
+      <div class="kp">
+        <div class="kp-dot"></div>
+        <div class="kp-text"><strong>196,608 trainable parameters</strong> out of 72 million total — that's 0.27%</div>
+      </div>
+      <div class="kp">
+        <div class="kp-dot"></div>
+        <div class="kp-text"><strong>8-bit quantization</strong> halves GPU memory — trainable on Apple Silicon</div>
+      </div>
+      <div class="kp">
+        <div class="kp-dot"></div>
+        <div class="kp-text"><strong>SpecAugment</strong> (frequency + time masking) reduces overfitting by 20–30% WER</div>
+      </div>
+      <div class="kp">
+        <div class="kp-dot"></div>
+        <div class="kp-text"><strong>Effective batch size 16</strong> via gradient accumulation (4 steps × 4 samples)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="right-label">Model Pipeline</div>
+    <div class="pipeline">
+      <div class="pipe-step frozen">
+        <div class="pipe-icon">🎵</div>
+        <div class="pipe-name">Audio Input</div>
+        <div class="pipe-sub">16 kHz WAV</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-step frozen">
+        <div class="pipe-icon">📊</div>
+        <div class="pipe-name">Log-Mel</div>
+        <div class="pipe-sub">Spectrogram</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-step frozen">
+        <div class="pipe-icon">🔒</div>
+        <div class="pipe-name">Encoder</div>
+        <div class="pipe-sub">Frozen</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-step active">
+        <div class="pipe-badge">Trainable ✓</div>
+        <div class="pipe-icon">⚡</div>
+        <div class="pipe-name">LoRA Layers</div>
+        <div class="pipe-sub">Rank-8 adapters</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-step active">
+        <div class="pipe-icon">🧠</div>
+        <div class="pipe-name">Decoder</div>
+        <div class="pipe-sub">Fine-tuned</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="pipe-step frozen">
+        <div class="pipe-icon">📝</div>
+        <div class="pipe-name">Transcript</div>
+        <div class="pipe-sub">Nigerian text</div>
+      </div>
+    </div>
+
+    <div class="configs">
+      <div class="cfg">
+        <div class="cfg-title">LoRA Config</div>
+        <div class="cfg-row"><span class="cfg-key">lora_rank</span><span class="cfg-val">8</span></div>
+        <div class="cfg-row"><span class="cfg-key">lora_alpha</span><span class="cfg-val">32</span></div>
+        <div class="cfg-row"><span class="cfg-key">targets</span><span class="cfg-val">q, v projections</span></div>
+        <div class="cfg-row"><span class="cfg-key">dropout</span><span class="cfg-val">0.1</span></div>
+      </div>
+      <div class="cfg">
+        <div class="cfg-title">Training Config</div>
+        <div class="cfg-row"><span class="cfg-key">learning_rate</span><span class="cfg-val">1e-5</span></div>
+        <div class="cfg-row"><span class="cfg-key">max_steps</span><span class="cfg-val">4,000</span></div>
+        <div class="cfg-row"><span class="cfg-key">warmup_steps</span><span class="cfg-val">500</span></div>
+        <div class="cfg-row"><span class="cfg-key">precision</span><span class="cfg-val">8-bit (MPS)</span></div>
+      </div>
+      <div class="cfg">
+        <div class="cfg-title">Data Augmentation</div>
+        <div class="cfg-row"><span class="cfg-key">freq_mask</span><span class="cfg-val">20% bins</span></div>
+        <div class="cfg-row"><span class="cfg-key">time_mask</span><span class="cfg-val">20% steps</span></div>
+        <div class="cfg-row"><span class="cfg-key">apply_rate</span><span class="cfg-val">50% samples</span></div>
+        <div class="cfg-row"><span class="cfg-key">WER gain</span><span class="cfg-val">20–30%</span></div>
+      </div>
+      <div class="cfg">
+        <div class="cfg-title">Why It Matters</div>
+        <div class="cfg-row"><span class="cfg-key">Full fine-tune</span><span class="cfg-val" style="color:#e05020">40GB+ GPU</span></div>
+        <div class="cfg-row"><span class="cfg-key">LoRA fine-tune</span><span class="cfg-val">MacBook M2</span></div>
+        <div class="cfg-row"><span class="cfg-key">Trainable params</span><span class="cfg-val">0.27%</span></div>
+        <div class="cfg-row"><span class="cfg-key">Performance loss</span><span class="cfg-val">≈ none</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">05 / 13</div>
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

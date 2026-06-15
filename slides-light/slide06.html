@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg { width:100%; height:100%; background: #f8faf8; position:relative; }
+  .bg::before {
+    content:''; position:absolute; inset:0;
+    background-image: linear-gradient(rgba(0,180,60,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,180,60,0.025) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  .header {
+    position:absolute; top:64px; left:120px; right:120px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  h2 { font-size:48px; font-weight:800; color: #0d1f12; letter-spacing:-1.5px; }
+  h2 span { color:#00d65a; }
+  .slide-num { font-size:13px; color:rgba(255,255,255,0.2); }
+
+  .sub { position:absolute; top:138px; left:120px; font-size:17px; color:rgba(255,255,255,0.7); }
+
+  /* Main table area */
+  .table-wrap {
+    position:absolute; top:185px; left:120px; right:120px;
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 20px; overflow: hidden;
+  }
+
+  table { width:100%; border-collapse:collapse; }
+
+  thead tr {
+    background: rgba(0,180,60,0.08);
+    border-bottom: 1px solid rgba(0,200,80,0.2);
+  }
+  thead th {
+    padding: 14px 28px; text-align:left;
+    font-size: 15px; font-weight: 600; color: rgba(0,220,90,1);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+
+  tbody tr { border-bottom: 1px solid rgba(0,0,0,0.06); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: rgba(0,0,0,0.02); }
+
+  td { padding: 12px 28px; font-size: 17px; color: rgba(0,20,10,0.85); }
+  td.lang { font-weight: 700; color: #0d1f12; font-size: 18px; }
+  td.num { font-weight: 600; color: #00d65a; font-size: 18px; }
+  td.dim { color: rgba(0,20,10,0.8); }
+
+  /* Bar chart inside cell */
+  .bar-cell { display: flex; align-items: center; gap: 12px; }
+  .bar-bg { flex: 1; max-width: 200px; height: 8px; background: rgba(0,0,0,0.08); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #00d65a, #007a32); }
+  .bar-fill.danger { background: linear-gradient(90deg, #e05020, #802010); }
+
+  /* Info box below table */
+  .info-row {
+    position:absolute; top:460px; left:120px; right:120px;
+    display:grid; grid-template-columns:1fr 1fr; gap:20px;
+  }
+  .info-card {
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 16px; padding: 16px 24px;
+    display:flex; gap:16px; align-items:flex-start;
+  }
+  .info-card.warn {
+    background: rgba(230,120,0,0.07);
+    border-color: rgba(230,120,0,0.2);
+  }
+  .info-card.success {
+    background: rgba(0,180,60,0.07);
+    border-color: rgba(0,200,80,0.2);
+  }
+  .info-icon { font-size:32px; flex-shrink:0; margin-top:2px; }
+  .info-title { font-size:22px; font-weight:700; color: #0d1f12; margin-bottom:10px; }
+  .info-body { font-size:18px; color:rgba(255,255,255,0.8); line-height:1.6; }
+  .info-body strong { color: #00d65a; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="header">
+    <h2>Datasets &amp; <span>Distribution</span></h2>
+    <div class="slide-num">06 / 13</div>
+  </div>
+  <div class="sub">Google WaxalNLP · Mozilla Common Voice — rebalanced with 70/15/15 split strategy</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Language</th>
+          <th>Source</th>
+          <th>Total Samples</th>
+          <th>Train 70%</th>
+          <th>Validation 15%</th>
+          <th>Test 15%</th>
+          <th>Relative Size</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="lang">Hausa</td>
+          <td class="dim">Mozilla Common Voice</td>
+          <td class="num">27,601</td>
+          <td class="num">19,320</td>
+          <td class="dim">4,140</td>
+          <td class="dim">4,141</td>
+          <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div><span style="font-size:14px;color:rgba(255,255,255,0.8)">100%</span></div></td>
+        </tr>
+        <tr>
+          <td class="lang">Yoruba</td>
+          <td class="dim">Google WaxalNLP + Mozilla</td>
+          <td class="num">~4,807</td>
+          <td class="num">~3,365</td>
+          <td class="dim">~721</td>
+          <td class="dim">~721</td>
+          <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:17%"></div></div><span style="font-size:14px;color:rgba(255,255,255,0.8)">17%</span></div></td>
+        </tr>
+        <tr>
+          <td class="lang">Igbo</td>
+          <td class="dim">Mozilla Common Voice</td>
+          <td class="num">2,401</td>
+          <td class="num">1,680</td>
+          <td class="dim">360</td>
+          <td class="dim">361</td>
+          <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:9%"></div></div><span style="font-size:14px;color:rgba(255,255,255,0.8)">9%</span></div></td>
+        </tr>
+        <tr>
+          <td class="lang">Pidgin</td>
+          <td class="dim">Mozilla Common Voice</td>
+          <td class="num" style="color:#e07040">38</td>
+          <td class="num" style="color:#e07040">26</td>
+          <td class="dim">6</td>
+          <td class="dim">6</td>
+          <td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill danger" style="width:1%"></div></div><span style="font-size:13px;color:#e07040">0.1%</span></div></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-row">
+    <div class="info-card warn">
+      <div class="info-icon">⚠️</div>
+      <div>
+        <div class="info-title">The Default Split Problem</div>
+        <div class="info-body">Mozilla's default splits locked <strong style="color:#e0a060">39% of Hausa data</strong> in test.tsv — permanently starving the training stream. Rigid file-system splits are a hidden bottleneck in low-resource language work.</div>
+      </div>
+    </div>
+    <div class="info-card success">
+      <div class="info-icon">✅</div>
+      <div>
+        <div class="info-title">Fix: Dynamic 70/15/15 Redistribution</div>
+        <div class="info-body">All splits merged and reallocated at runtime. Hausa training samples jumped from ~16,846 to <strong>~19,320</strong> — an extra 2,500 iterations recovered for free.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

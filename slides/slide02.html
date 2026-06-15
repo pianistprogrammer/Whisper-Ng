@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+
+  .bg {
+    width: 100%; height: 100%;
+    background: #0a0a0a;
+    position: relative;
+  }
+  .bg::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .header {
+    position: absolute; top: 64px; left: 120px; right: 120px;
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .slide-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 0.1em; }
+  .slide-num { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.2); }
+
+  h2 {
+    position: absolute; top: 100px; left: 120px;
+    font-size: 52px; font-weight: 800; color: white; letter-spacing: -1.5px;
+  }
+  h2 span { color: #00d65a; }
+
+  .divider {
+    position: absolute; top: 178px; left: 120px;
+    width: 60px; height: 4px; border-radius: 2px;
+    background: linear-gradient(90deg, #00d65a, transparent);
+  }
+
+  .grid {
+    position: absolute; top: 210px; left: 120px; right: 120px;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .item {
+    display: flex; align-items: flex-start; gap: 20px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px;
+    padding: 28px 32px;
+    transition: all 0.2s;
+  }
+
+  .num {
+    width: 80px; height: 80px; border-radius: 10px;
+    background: linear-gradient(135deg, #00c851, #007a32);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 800; color: white;
+    flex-shrink: 0;
+  }
+
+  .item-text { }
+  .item-title { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+  .item-desc { font-size: 18px; color: rgba(255,255,255,0.7); line-height: 1.5; }
+
+  .bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #00c851 0%, transparent 60%);
+  }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="header">
+    <div class="slide-label">Overview</div>
+    <div class="slide-num">02 / 13</div>
+  </div>
+
+  <h2>What We'll <span>Cover</span></h2>
+  <div class="divider"></div>
+
+  <div class="grid">
+    <div class="item">
+      <div class="num">1</div>
+      <div class="item-text">
+        <div class="item-title">The Spark</div>
+        <div class="item-desc">How a personal app idea became a research mission into African language AI</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">2</div>
+      <div class="item-text">
+        <div class="item-title">The Problem</div>
+        <div class="item-desc">220M+ Nigerians, near-zero training data, and what selective intelligence really means</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">3</div>
+      <div class="item-text">
+        <div class="item-title">Technical Approach</div>
+        <div class="item-desc">Fine-tuning Whisper with LoRA — 0.27% of parameters, full model performance</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">4</div>
+      <div class="item-text">
+        <div class="item-title">Datasets</div>
+        <div class="item-desc">Google WaxalNLP, Mozilla Common Voice, and a smarter rebalancing strategy</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">5</div>
+      <div class="item-text">
+        <div class="item-title">Results</div>
+        <div class="item-desc">Training curves, WER benchmarks, and what the numbers tell us about progress</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">6</div>
+      <div class="item-text">
+        <div class="item-title">Challenges</div>
+        <div class="item-desc">Tonal languages, diacritics, code-switching, dialect variation, and data scarcity</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">7</div>
+      <div class="item-text">
+        <div class="item-title">Crowdsourcing Solution</div>
+        <div class="item-desc">ngs.primeeralabs.com — building the dataset Nigerian AI deserves, together</div>
+      </div>
+    </div>
+    <div class="item">
+      <div class="num">8</div>
+      <div class="item-text">
+        <div class="item-title">What's Next</div>
+        <div class="item-desc">Dialect models, mobile deployment, JustTalk integration, and the road ahead</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

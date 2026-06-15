@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg { width:100%; height:100%; background: #ffffff; position:relative; }
+  .bg::before {
+    content:''; position:absolute; inset:0;
+    background-image: linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+    background-size:80px 80px;
+  }
+
+  .header { position:absolute; top:64px; left:120px; right:120px; display:flex; align-items:center; justify-content:space-between; }
+  h2 { font-size:48px; font-weight:800; color: #0d1f12; letter-spacing:-1.5px; }
+  h2 span { color:#00d65a; }
+  .slide-num { font-size:13px; color:rgba(255,255,255,0.2); }
+  .sub { position:absolute; top:138px; left:120px; font-size:17px; color:rgba(255,255,255,0.7); }
+
+  .grid {
+    position:absolute; top:196px; left:120px; right:120px; bottom:60px;
+    display:grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr;
+    gap:16px;
+  }
+
+  .card {
+    background: rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 20px; padding: 28px 30px;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);
+  }
+  .card.red::before { background: linear-gradient(90deg, #e05030, transparent); }
+  .card.orange::before { background: linear-gradient(90deg, #e07830, transparent); }
+  .card.yellow::before { background: linear-gradient(90deg, #d4a800, transparent); }
+  .card.blue::before { background: linear-gradient(90deg, #3080e0, transparent); }
+  .card.purple::before { background: linear-gradient(90deg, #9040e0, transparent); }
+  .card.teal::before { background: linear-gradient(90deg, #00b0a0, transparent); }
+
+  .card-head { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
+  .card-icon { font-size:32px; flex-shrink:0; }
+  .card-title { font-size:24px; font-weight:700; color: #0d1f12; }
+  .card-subtitle { font-size:15px; color:rgba(255,255,255,0.65); margin-top:4px; }
+
+  .card-body { font-size:17px; color:rgba(255,255,255,0.8); line-height:1.65; flex:1; }
+  .card-body strong { color: #0d1f12; }
+
+  .pill {
+    display:inline-block; background:rgba(0,0,0,0.08); border:1px solid rgba(255,255,255,0.15);
+    border-radius:6px; padding:5px 12px; font-size:14px; font-weight:600; color:rgba(255,255,255,0.75);
+    margin:4px 4px 0 0;
+  }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="header">
+    <h2>The <span>Challenges</span></h2>
+    <div class="slide-num">09 / 13</div>
+  </div>
+  <div class="sub">What makes Nigerian language speech recognition uniquely difficult</div>
+
+  <div class="grid">
+    <div class="card red">
+      <div class="card-head">
+        <div class="card-icon">📉</div>
+        <div>
+          <div class="card-title">Data Scarcity</div>
+          <div class="card-subtitle">The primary bottleneck</div>
+        </div>
+      </div>
+      <div class="card-body">
+        Nigerian Pidgin has <strong>38 samples total</strong>. Yoruba and Igbo sit at ~2,400 each. Even Hausa — the best-resourced — has just 27K samples vs. millions for English. The model memorises instead of learning phonetic rules.
+      </div>
+    </div>
+
+    <div class="card orange">
+      <div class="card-head">
+        <div class="card-icon">🎵</div>
+        <div>
+          <div class="card-title">Tonal Languages & Diacritics</div>
+          <div class="card-subtitle">Yoruba · Igbo</div>
+        </div>
+      </div>
+      <div class="card-body">
+        Pitch changes word meaning entirely. Diacritics like <strong>ọ, ẹ, ṣ, á, à</strong> are routinely dropped by contributors typing on standard keyboards. The model outputs the <em>correct</em> form, gets penalised by WER for it.
+        <div style="margin-top:10px;">
+          <div class="pill">ọ vs o</div>
+          <div class="pill">ẹ vs e</div>
+          <div class="pill">tone marks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card yellow">
+      <div class="card-head">
+        <div class="card-icon">🔄</div>
+        <div>
+          <div class="card-title">Code-Switching</div>
+          <div class="card-subtitle">Mid-sentence language mixing</div>
+        </div>
+      </div>
+      <div class="card-body">
+        Nigerian speakers naturally alternate between their native language, Pidgin, and English <strong>within a single sentence</strong>. No training set captures this fluently. Tokeniser breaks down at language boundaries — hallucination loops, spelling collapse.
+      </div>
+    </div>
+
+    <div class="card blue">
+      <div class="card-head">
+        <div class="card-icon">🗺️</div>
+        <div>
+          <div class="card-title">Dialectal Variation</div>
+          <div class="card-subtitle">20+ dialects per language</div>
+        </div>
+      </div>
+      <div class="card-body">
+        Igbo and Yoruba each have <strong>20+ regional dialects</strong> with distinct pronunciations and vocabulary. A model trained on Lagos Yoruba degrades significantly on Ibadan or Ekiti speech. No dialect-level benchmarks exist today.
+      </div>
+    </div>
+
+    <div class="card purple">
+      <div class="card-head">
+        <div class="card-icon">📝</div>
+        <div>
+          <div class="card-title">Orthographic Inconsistency</div>
+          <div class="card-subtitle">Community-contributed noise</div>
+        </div>
+      </div>
+      <div class="card-body">
+        The same word can be transcribed <strong>5 different ways</strong> across the dataset. Normalisation risks stripping phonemic meaning. Evaluation metrics that punish correct-but-differently-spelled outputs paint a falsely grim picture.
+      </div>
+    </div>
+
+    <div class="card teal">
+      <div class="card-head">
+        <div class="card-icon">💻</div>
+        <div>
+          <div class="card-title">Compute Constraints</div>
+          <div class="card-subtitle">Democratising AI research</div>
+        </div>
+      </div>
+      <div class="card-body">
+        Full Whisper fine-tuning requires <strong>40GB+ GPU</strong>. LoRA + 8-bit quantisation makes training possible on Apple Silicon — but MPS is 3–5× slower than an A100. African research labs rarely have data-centre access.
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

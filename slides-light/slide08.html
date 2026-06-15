@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg { width:100%; height:100%; background:#ffffff; position:relative; display:flex; flex-direction:column; padding:72px 96px 60px; }
+
+  .header { display:flex; align-items:center; gap:24px; margin-bottom:52px; }
+  .tag { display:inline-flex; align-items:center; gap:8px; background:rgba(0,180,60,0.08); border:1px solid rgba(0,180,60,0.25); border-radius:100px; padding:7px 16px; width:fit-content; }
+  .tag span { font-size:12px; font-weight:600; color:#00a846; text-transform:uppercase; letter-spacing:0.07em; }
+  h2 { font-size:48px; font-weight:800; color:#0d1f12; line-height:1.05; letter-spacing:-1.5px; }
+  h2 em { font-style:normal; color:#00a846; }
+  .sub { font-size:16px; color:rgba(0,0,0,0.4); margin-left:auto; line-height:1.4; text-align:right; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; flex:1; }
+
+  .card {
+    background:#f7f9f7; border:1px solid rgba(0,0,0,0.07);
+    border-radius:20px; padding:32px 36px;
+    display:flex; flex-direction:column; gap:20px;
+    position:relative; overflow:hidden;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .card.yor::before { background:linear-gradient(90deg,#00a846,transparent); }
+  .card.hau::before { background:linear-gradient(90deg,#1a7edc,transparent); }
+  .card.ibo::before { background:linear-gradient(90deg,#d97b00,transparent); }
+  .card.pcm::before { background:linear-gradient(90deg,#9a30e0,transparent); }
+
+  .card-header { display:flex; align-items:center; gap:12px; }
+  .lang-badge {
+    font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
+    padding:4px 12px; border-radius:100px;
+  }
+  .yor .lang-badge { background:rgba(0,168,70,0.12); color:#00863a; border:1px solid rgba(0,168,70,0.3); }
+  .hau .lang-badge { background:rgba(26,126,220,0.12); color:#1a6dc0; border:1px solid rgba(26,126,220,0.3); }
+  .ibo .lang-badge { background:rgba(217,123,0,0.12); color:#b36600; border:1px solid rgba(217,123,0,0.3); }
+  .pcm .lang-badge { background:rgba(154,48,224,0.12); color:#7a22b8; border:1px solid rgba(154,48,224,0.3); }
+
+  .lang-name { font-size:15px; font-weight:600; color:rgba(0,0,0,0.5); }
+  .accuracy-pill {
+    margin-left:auto; font-size:11px; font-weight:700;
+    padding:4px 10px; border-radius:100px;
+    background:rgba(0,168,70,0.1); color:#00863a; border:1px solid rgba(0,168,70,0.25);
+  }
+
+  .divider { height:1px; background:rgba(0,0,0,0.06); }
+
+  .row { display:flex; flex-direction:column; gap:8px; }
+  .row-label {
+    font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.09em;
+    color:rgba(0,0,0,0.35);
+  }
+  .row-text {
+    font-size:22px; font-weight:500; color:#0d1f12; line-height:1.4;
+    background:rgba(0,0,0,0.03); border-radius:10px; padding:12px 16px;
+    border:1px solid rgba(0,0,0,0.06);
+  }
+  .yor .row-text.hyp { background:rgba(0,168,70,0.07); border-color:rgba(0,168,70,0.2); }
+  .hau .row-text.hyp { background:rgba(26,126,220,0.07); border-color:rgba(26,126,220,0.2); }
+  .ibo .row-text.hyp { background:rgba(217,123,0,0.07); border-color:rgba(217,123,0,0.2); }
+  .pcm .row-text.hyp { background:rgba(154,48,224,0.07); border-color:rgba(154,48,224,0.2); }
+
+  .slide-num { position:absolute; bottom:32px; right:48px; font-size:13px; color:rgba(0,0,0,0.2); }
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00a846 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+
+  <div class="header">
+    <div>
+      <div class="tag" style="margin-bottom:14px;"><span>Model Outputs</span></div>
+      <h2>Sample <em>Transcriptions</em></h2>
+    </div>
+    <div class="sub">Near-perfect results on short utterances<br>across all four target languages</div>
+  </div>
+
+  <div class="grid">
+
+    <!-- YORUBA -->
+    <div class="card yor">
+      <div class="card-header">
+        <div class="lang-badge">YOR</div>
+        <div class="lang-name">Yoruba</div>
+        <div class="accuracy-pill">Near Perfect</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <div class="row-label">Expected</div>
+        <div class="row-text">Adé Yélò lórí Omi</div>
+      </div>
+      <div class="row">
+        <div class="row-label">Transcribed</div>
+        <div class="row-text hyp">Adè yẹlò lórí omi</div>
+      </div>
+    </div>
+
+    <!-- HAUSA -->
+    <div class="card hau">
+      <div class="card-header">
+        <div class="lang-badge">HAU</div>
+        <div class="lang-name">Hausa</div>
+        <div class="accuracy-pill">Near Perfect</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <div class="row-label">Expected</div>
+        <div class="row-text">Yau za a wuni da tsananin rana.</div>
+      </div>
+      <div class="row">
+        <div class="row-label">Transcribed</div>
+        <div class="row-text hyp">Yau za a wune da tsananin rana.</div>
+      </div>
+    </div>
+
+    <!-- IGBO -->
+    <div class="card ibo">
+      <div class="card-header">
+        <div class="lang-badge">IBO</div>
+        <div class="lang-name">Igbo</div>
+        <div class="accuracy-pill">Near Perfect</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <div class="row-label">Expected</div>
+        <div class="row-text">Asaba bụ obodo kacha nta na Naịjirịa site na ọnụ ọgụgụ mmadụ.</div>
+      </div>
+      <div class="row">
+        <div class="row-label">Transcribed</div>
+        <div class="row-text hyp">Asaba bụ obodo kacha nta na Naịjiria site n'ọnụ ọgụgụ mmadụ</div>
+      </div>
+    </div>
+
+    <!-- NIGERIAN PIDGIN -->
+    <div class="card pcm">
+      <div class="card-header">
+        <div class="lang-badge">PCM</div>
+        <div class="lang-name">Nigerian Pidgin</div>
+        <div class="accuracy-pill">Near Perfect</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <div class="row-label">Expected</div>
+        <div class="row-text">Almost all restuarants for Naija get Eba</div>
+      </div>
+      <div class="row">
+        <div class="row-label">Transcribed</div>
+        <div class="row-text hyp">Almost all restaurants for Naija get eba</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="slide-num">08 / 13</div>
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

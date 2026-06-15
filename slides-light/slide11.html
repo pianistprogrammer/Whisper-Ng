@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg { width:100%; height:100%; background: #ffffff; position:relative; }
+  .bg::before { content:''; position:absolute; inset:0; background-image: linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px); background-size:80px 80px; }
+
+  .header { position:absolute; top:64px; left:120px; right:120px; display:flex; align-items:center; justify-content:space-between; }
+  h2 { font-size:48px; font-weight:800; color: #0d1f12; letter-spacing:-1.5px; }
+  h2 span { color:#00d65a; }
+  .slide-num { font-size:13px; color:rgba(255,255,255,0.2); }
+  .sub { position:absolute; top:138px; left:120px; font-size:17px; color:rgba(255,255,255,0.7); }
+
+  .grid {
+    position:absolute; top:196px; left:120px; right:120px; bottom:60px;
+    display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:1fr 1fr; gap:16px;
+  }
+
+  .card {
+    background: rgba(0,0,0,0.02); border:1px solid rgba(255,255,255,0.07);
+    border-radius:20px; padding:28px 30px; position:relative; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .card::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, #00c851, transparent); }
+
+  .num-badge {
+    position:absolute; top:20px; right:20px;
+    width:40px; height:40px; border-radius:50%;
+    background:rgba(0,200,80,0.1); border:1px solid rgba(0,200,80,0.25);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; font-weight:800; color:#00d65a;
+  }
+
+  .card-icon { font-size:36px; margin-bottom:14px; }
+  .card-title { font-size:24px; font-weight:700; color: #0d1f12; margin-bottom:12px; padding-right:48px; }
+  .card-body { font-size:17px; color:rgba(255,255,255,0.8); line-height:1.65; flex:1; }
+  .card-body strong { color: #0d1f12; }
+
+  .card-tag {
+    display:inline-block; margin-top:12px;
+    background:rgba(0,200,80,0.1); border:1px solid rgba(0,200,80,0.2);
+    border-radius:6px; padding:5px 14px;
+    font-size:14px; font-weight:600; color:#00c851;
+  }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="header">
+    <h2>What Still Needs to Be <span>Done</span></h2>
+    <div class="slide-num">11 / 13</div>
+  </div>
+  <div class="sub">The path is clear — the work continues</div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="num-badge">1</div>
+      <div class="card-icon">📣</div>
+      <div class="card-title">Grow the Corpus</div>
+      <div class="card-body">Scale crowdsourced data to <strong>10,000+ samples per language</strong>. Partner with Nigerian universities, radio stations, and podcast creators to reach diverse speakers.</div>
+      <div class="card-tag">ngs.primeeralabs.com</div>
+    </div>
+
+    <div class="card">
+      <div class="num-badge">2</div>
+      <div class="card-icon">🗺️</div>
+      <div class="card-title">Dialect-Level Models</div>
+      <div class="card-body">Train <strong>separate LoRA adapters per dialect</strong> — Ibadan Yoruba, Lagos Yoruba, Igbo variants. Build the first dialect-level ASR benchmark for Nigerian languages.</div>
+      <div class="card-tag">Research priority</div>
+    </div>
+
+    <div class="card">
+      <div class="num-badge">3</div>
+      <div class="card-icon">📊</div>
+      <div class="card-title">Better Evaluation Metrics</div>
+      <div class="card-body">Develop <strong>diacritic-aware WER</strong> that doesn't penalise correct tonal transcriptions. Character Error Rate (CER) is more meaningful than WER for tonal languages.</div>
+      <div class="card-tag">Evaluation framework</div>
+    </div>
+
+    <div class="card">
+      <div class="num-badge">4</div>
+      <div class="card-icon">🔄</div>
+      <div class="card-title">Code-Switching Support</div>
+      <div class="card-body">Collect mixed-language recordings — Yoruba–English, Hausa–English, Pidgin–English. Train a <strong>language-switch router</strong> to detect mid-utterance transitions.</div>
+      <div class="card-tag">NLP research</div>
+    </div>
+
+    <div class="card">
+      <div class="num-badge">5</div>
+      <div class="card-icon">📱</div>
+      <div class="card-title">Mobile & Offline Deployment</div>
+      <div class="card-body">Quantize model to run on <strong>Android and iOS without internet</strong>. Nigeria has limited bandwidth — on-device inference isn't optional, it's essential for real-world impact.</div>
+      <div class="card-tag">Engineering milestone</div>
+    </div>
+
+    <div class="card">
+      <div class="num-badge">6</div>
+      <div class="card-icon">🎙️</div>
+      <div class="card-title">JustTalk Integration</div>
+      <div class="card-body">Deploy the fine-tuned model <strong>directly into the JustTalk app</strong>. Real-world user testing with Nigerian language communities — close the loop from research to product.</div>
+      <div class="card-tag">Product milestone</div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

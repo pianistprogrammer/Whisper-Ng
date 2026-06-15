@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg {
+    width:100%; height:100%;
+    background: linear-gradient(135deg, #030a05 0%, #071408 50%, #030a05 100%);
+    position:relative;
+  }
+  .bg::before { content:''; position:absolute; inset:0; background-image: linear-gradient(rgba(0,200,80,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,200,80,0.03) 1px, transparent 1px); background-size:80px 80px; }
+
+  .glow { position:absolute; width:1200px; height:800px; top:50%; left:50%; transform:translate(-50%,-50%); background:radial-gradient(ellipse, rgba(0,200,80,0.08) 0%, transparent 65%); pointer-events:none; }
+
+  .header { position:absolute; top:48px; left:120px; right:120px; display:flex; align-items:center; justify-content:space-between; }
+  h2 { font-size:48px; font-weight:800; color:white; letter-spacing:-1.5px; }
+  h2 span { color:#00d65a; }
+  .slide-num { font-size:13px; color:rgba(255,255,255,0.2); }
+  .sub { position:absolute; top:118px; left:120px; font-size:17px; color:rgba(255,255,255,0.7); }
+
+  .cards {
+    position:absolute; top:168px; left:120px; right:120px; bottom:16px;
+    display:flex; flex-direction:column; gap:14px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px; padding:24px 40px;
+    display:flex; gap:32px; align-items:center;
+    position:relative; overflow:hidden; flex:1;
+  }
+  .card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px; }
+  .card.c1::before { background: linear-gradient(180deg, #00d65a, #007a32); }
+  .card.c2::before { background: linear-gradient(180deg, #3080e0, #1050a0); }
+  .card.c3::before { background: linear-gradient(180deg, #e07020, #a04010); }
+  .card.c4::before { background: linear-gradient(180deg, #9040e0, #5020a0); }
+
+  .num {
+    width: 64px; height: 64px; border-radius: 16px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:900; flex-shrink:0;
+  }
+  .c1 .num { background: rgba(0,200,80,0.15); color:#00d65a; border:1px solid rgba(0,200,80,0.3); }
+  .c2 .num { background: rgba(48,128,224,0.15); color:#6090e0; border:1px solid rgba(48,128,224,0.3); }
+  .c3 .num { background: rgba(224,112,32,0.15); color:#e08040; border:1px solid rgba(224,112,32,0.3); }
+  .c4 .num { background: rgba(144,64,224,0.15); color:#b060f0; border:1px solid rgba(144,64,224,0.3); }
+
+  .card-content { flex:1; }
+  .card-title { font-size:26px; font-weight:800; color:white; margin-bottom:8px; }
+  .card-body { font-size:18px; color:rgba(255,255,255,0.8); line-height:1.6; }
+  .card-body strong { color:#ffffff; }
+
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="glow"></div>
+
+  <div class="header">
+    <h2>Key <span>Takeaways</span></h2>
+    <div class="slide-num">12 / 13</div>
+  </div>
+  <div class="sub">What this research proves — and why it matters beyond the technical results</div>
+
+  <div class="cards">
+    <div class="card c1">
+      <div class="num">01</div>
+      <div class="card-content">
+        <div class="card-title">Language Inclusion Is an AI Justice Issue</div>
+        <div class="card-body">220M+ Nigerians deserve AI that can hear them. Building for under-represented languages is not a niche academic exercise — it is <strong>foundational to what intelligence means</strong> in a global context.</div>
+      </div>
+    </div>
+
+    <div class="card c2">
+      <div class="num">02</div>
+      <div class="card-content">
+        <div class="card-title">LoRA Democratises AI Research</div>
+        <div class="card-body">Parameter-Efficient Fine-Tuning lets a single researcher adapt a 244M-parameter model on a laptop. <strong>You don't need a data centre</strong> to do meaningful, world-class AI research in 2026.</div>
+      </div>
+    </div>
+
+    <div class="card c3">
+      <div class="num">03</div>
+      <div class="card-content">
+        <div class="card-title">Data Is the Bottleneck — Community Is the Solution</div>
+        <div class="card-body">No training technique compensates for missing data. The crowdsourcing platform at <strong>ngs.primeeralabs.com</strong> is the path to the scale of data these languages need.</div>
+      </div>
+    </div>
+
+    <div class="card c4">
+      <div class="num">04</div>
+      <div class="card-content">
+        <div class="card-title">The Work Is Not Done — But the Path Is Clear</div>
+        <div class="card-body">More data, dialect-aware evaluation, mobile deployment, and JustTalk integration are the next milestones. <strong>The trajectory is set.</strong> What's needed now is more voices joining the effort.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

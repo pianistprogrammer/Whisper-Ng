@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+
+  .bg {
+    width: 100%; height: 100%;
+    background: #050a08;
+    position: relative;
+  }
+  .bg::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,80,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,80,0.03) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  /* Glow */
+  .glow {
+    position: absolute; width: 800px; height: 800px;
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(0,160,60,0.08) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .header {
+    position: absolute; top: 64px; left: 120px; right: 120px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  h2 { font-size: 48px; font-weight: 800; color: white; letter-spacing: -1.5px; }
+  h2 span { color: #00d65a; }
+  .slide-num { font-size: 13px; color: rgba(255,255,255,0.2); }
+
+  .sub {
+    position: absolute; top: 140px; left: 120px;
+    font-size: 18px; color: rgba(255,255,255,0.35);
+  }
+
+  /* Big number cards */
+  .stats-row {
+    position: absolute; top: 200px; left: 120px; width: 840px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+  }
+
+  .stat-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 20px; padding: 36px 32px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #00c851, transparent);
+  }
+  .stat-card.featured {
+    background: linear-gradient(145deg, rgba(0,180,60,0.14), rgba(0,80,30,0.08));
+    border-color: rgba(0,200,80,0.25);
+  }
+  .stat-card.featured::before { background: linear-gradient(90deg, #00ff88, #00c851); }
+
+  .stat-icon { font-size: 28px; margin-bottom: 16px; }
+  .stat-val { font-size: 52px; font-weight: 900; color: white; letter-spacing: -2px; line-height: 1; margin-bottom: 8px; }
+  .stat-val span { font-size: 22px; font-weight: 400; color: rgba(255,255,255,0.7); }
+  .stat-title { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.85); margin-bottom: 6px; }
+  .stat-desc { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.5; }
+
+  /* Language pills */
+  .langs-section {
+    position: absolute; bottom: 140px; left: 120px; right: 120px;
+  }
+  .langs-label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; }
+  .langs-row { display: flex; gap: 16px; align-items: stretch; }
+
+  .lang-card {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .lang-name { font-size: 20px; font-weight: 700; color: white; }
+  .lang-samples { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+  .lang-bar-wrap { width: 120px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+  .lang-bar { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #00d65a, #007a32); }
+
+  .baseline-ref {
+    position: absolute; top: 200px; left: 1000px; right: 120px;
+    font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.8;
+    padding: 28px 32px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+  }
+  .baseline-label { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 20px; }
+  .baseline-items { display: flex; flex-direction: column; gap: 16px; }
+  .baseline-items span { font-size: 22px; color: rgba(255,255,255,0.65); }
+
+  .bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px; background: linear-gradient(90deg, #00c851 0%, transparent 60%);
+  }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="glow"></div>
+
+  <div class="header">
+    <h2>The <span>Problem</span></h2>
+    <div class="slide-num">04 / 13</div>
+  </div>
+
+  <div class="sub">Global AI systems speak the world's largest languages. They don't speak yours.</div>
+
+  <div class="stats-row">
+    <div class="stat-card featured">
+      <div class="stat-icon">🌍</div>
+      <div class="stat-val">220M<span>+</span></div>
+      <div class="stat-title">Nigerians Affected</div>
+      <div class="stat-desc">Speakers of Hausa, Yoruba, Igbo & Pidgin whose voices mainstream AI effectively cannot process</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎙️</div>
+      <div class="stat-val">680K<span> hrs</span></div>
+      <div class="stat-title">Whisper Training Data</div>
+      <div class="stat-desc">Total audio used to train Whisper — less than 0.1% is Nigerian language content</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-val">~32K</div>
+      <div class="stat-title">Samples Available</div>
+      <div class="stat-desc">Total Nigerian language audio samples across all 4 target languages combined</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-val">~100<span>%</span></div>
+      <div class="stat-title">Baseline WER</div>
+      <div class="stat-desc">Word error rate of vanilla Whisper on Hausa/Yoruba — effectively unusable without fine-tuning</div>
+    </div>
+  </div>
+
+  <div class="langs-section">
+    <div class="langs-label">Data Availability by Language</div>
+    <div class="langs-row">
+      <div class="lang-card">
+        <div>
+          <div class="lang-name">Hausa</div>
+          <div class="lang-samples">27,601 samples</div>
+        </div>
+        <div class="lang-bar-wrap"><div class="lang-bar" style="width:100%"></div></div>
+      </div>
+      <div class="lang-card">
+        <div>
+          <div class="lang-name">Yoruba</div>
+          <div class="lang-samples">~4,807 samples</div>
+        </div>
+        <div class="lang-bar-wrap"><div class="lang-bar" style="width:17%"></div></div>
+      </div>
+      <div class="lang-card">
+        <div>
+          <div class="lang-name">Igbo</div>
+          <div class="lang-samples">2,401 samples</div>
+        </div>
+        <div class="lang-bar-wrap"><div class="lang-bar" style="width:9%"></div></div>
+      </div>
+      <div class="lang-card">
+        <div>
+          <div class="lang-name">Nigerian Pidgin</div>
+          <div class="lang-samples">38 samples only</div>
+        </div>
+        <div class="lang-bar-wrap"><div class="lang-bar" style="width:1%; background: #e05020;"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="baseline-ref">
+    <div class="baseline-label">For Context — Whisper WER on High-Resource Languages:</div>
+    <div class="baseline-items">
+      <span>English: ~3-5%</span>
+      <span>Spanish: ~4-6%</span>
+      <span>French: ~5-7%</span>
+      <span>German: ~6-8%</span>
+      <span>Chinese: ~8-12%</span>
+      <span style="color: #e07030;">Hausa/Yoruba (untrained): ~100%</span>
+    </div>
+  </div>
+
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>

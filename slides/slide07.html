@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+  .bg { width:100%; height:100%; background:#080808; position:relative; display:flex; }
+
+  .left {
+    width:680px; flex-shrink:0; padding:80px 72px;
+    display:flex; flex-direction:column; justify-content:center;
+    border-right: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .tag { display:inline-flex; align-items:center; gap:8px; background:rgba(0,200,80,0.1); border:1px solid rgba(0,200,80,0.25); border-radius:100px; padding:7px 16px; margin-bottom:28px; width:fit-content; }
+  .tag span { font-size:12px; font-weight:600; color:#00c851; text-transform:uppercase; letter-spacing:0.07em; }
+
+  h2 { font-size:50px; font-weight:800; color:white; line-height:1.05; letter-spacing:-1.5px; margin-bottom:20px; }
+  h2 em { font-style:normal; color:#00d65a; }
+
+  .lead { font-size:16px; color:rgba(255,255,255,0.75); line-height:1.65; margin-bottom:36px; }
+
+  /* Big win */
+  .big-win {
+    background: linear-gradient(135deg, rgba(0,180,60,0.15), rgba(0,100,30,0.08));
+    border: 1px solid rgba(0,200,80,0.25); border-radius:16px; padding:24px 28px; margin-bottom:20px;
+  }
+  .win-label { font-size:12px; font-weight:600; color:rgba(0,220,90,0.9); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+  .win-val { font-size:64px; font-weight:900; color:#00d65a; letter-spacing:-2px; line-height:1; }
+  .win-sub { font-size:15px; color:rgba(255,255,255,0.75); margin-top:6px; }
+
+  .note {
+    background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+    border-radius:12px; padding:16px 20px;
+    font-size:14px; color:rgba(255,255,255,0.75); line-height:1.5;
+  }
+
+  /* Right — chart area */
+  .right { flex:1; padding:72px 80px; display:flex; flex-direction:column; justify-content:center; gap:20px; }
+
+  .right-label { font-size:12px; font-weight:600; color:rgba(255,255,255,0.65); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:4px; }
+
+  /* Checkpoint cards */
+  .checkpoints { display:flex; flex-direction:column; gap:12px; }
+  .cp {
+    display:flex; align-items:center; gap:24px;
+    background: rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);
+    border-radius:14px; padding:20px 28px; position:relative; overflow:hidden;
+  }
+  .cp.best {
+    background: linear-gradient(135deg, rgba(0,180,60,0.12), rgba(0,80,30,0.06));
+    border-color: rgba(0,200,80,0.3);
+  }
+  .cp::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:rgba(255,255,255,0.1); }
+  .cp.best::before { background:#00d65a; }
+
+  .cp-step { font-size:17px; font-weight:600; color:rgba(255,255,255,0.75); width:140px; flex-shrink:0; }
+  .cp.best .cp-step { color:#00d65a; }
+
+  .cp-wer-wrap { flex:1; }
+  .cp-wer-bar-bg { height:8px; background:rgba(255,255,255,0.06); border-radius:4px; margin-bottom:6px; overflow:hidden; }
+  .cp-wer-bar { height:100%; border-radius:4px; background:linear-gradient(90deg, #00d65a, #007a32); }
+  .cp.best .cp-wer-bar { background:linear-gradient(90deg,#00ff88,#00c851); }
+  .cp-wer-label { font-size:15px; color:rgba(255,255,255,0.65); }
+
+  .cp-wer-val { font-size:34px; font-weight:800; color:white; letter-spacing:-0.5px; width:120px; flex-shrink:0; text-align:right; }
+  .cp-wer-val span { font-size:18px; font-weight:400; color:rgba(255,255,255,0.65); }
+  .cp.best .cp-wer-val { color:#00d65a; }
+
+  .cp-note { font-size:16px; color:rgba(255,255,255,0.65); width:220px; flex-shrink:0; text-align:right; }
+  .cp.best .cp-note { color:rgba(0,220,90,0.9); }
+
+  .best-badge {
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    background:#00c851; color:#000; font-size:11px; font-weight:700;
+    padding:4px 12px; border-radius:100px;
+  }
+
+  /* Loss chart (simple bar) */
+  .loss-row { display:flex; gap:16px; align-items:flex-end; }
+  .loss-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .loss-bar-wrap { width:100%; background:rgba(255,255,255,0.05); border-radius:6px 6px 0 0; display:flex; align-items:flex-end; height:80px; }
+  .loss-bar { width:100%; border-radius:6px 6px 0 0; background:linear-gradient(180deg, rgba(0,200,80,0.6), rgba(0,120,40,0.3)); }
+  .loss-val { font-size:18px; font-weight:600; color:rgba(255,255,255,0.8); }
+  .loss-label { font-size:15px; color:rgba(255,255,255,0.6); }
+
+  .slide-num { position:absolute; bottom:40px; right:40px; font-size:13px; color:rgba(255,255,255,0.2); }
+  .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00c851 0%,transparent 60%); }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="left">
+    <div class="tag"><span>Results</span></div>
+    <h2>Training<br><em>Results</em></h2>
+    <p class="lead">The model was evaluated every 1,000 steps. Best checkpoint selected at step 3,000 based on validation WER.</p>
+
+    <div class="big-win">
+      <div class="win-label">Best Word Error Rate</div>
+      <div class="win-val">64.18<span style="font-size:28px;font-weight:400;color:rgba(0,220,90,0.5)">%</span></div>
+      <div class="win-sub">Checkpoint-3000 · 6,224 training epochs</div>
+    </div>
+
+    <div class="note">
+      Vanilla Whisper scores ~100% WER on these languages. A 64% WER represents meaningful progress in an extremely low-resource, tonal language setting.
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="right-label">WER by Checkpoint — Lower is Better</div>
+    <div class="checkpoints">
+      <div class="cp">
+        <div class="cp-step">Step 1,000</div>
+        <div class="cp-wer-wrap">
+          <div class="cp-wer-bar-bg"><div class="cp-wer-bar" style="width:66.34%"></div></div>
+          <div class="cp-wer-label">eval_loss: 1.018</div>
+        </div>
+        <div class="cp-wer-val">66.34<span>%</span></div>
+        <div class="cp-note">Early training</div>
+      </div>
+      <div class="cp">
+        <div class="cp-step">Step 2,000</div>
+        <div class="cp-wer-wrap">
+          <div class="cp-wer-bar-bg"><div class="cp-wer-bar" style="width:64.42%"></div></div>
+          <div class="cp-wer-label">eval_loss: 0.952</div>
+        </div>
+        <div class="cp-wer-val">64.42<span>%</span></div>
+        <div class="cp-note">Steady improvement</div>
+      </div>
+      <div class="cp best">
+        <div class="cp-step">Step 3,000 ★</div>
+        <div class="cp-wer-wrap">
+          <div class="cp-wer-bar-bg"><div class="cp-wer-bar" style="width:64.18%"></div></div>
+          <div class="cp-wer-label">eval_loss: 0.974</div>
+        </div>
+        <div class="cp-wer-val">64.18<span>%</span></div>
+        <div class="cp-note">→ Best model saved</div>
+        <div class="best-badge">BEST</div>
+      </div>
+      <div class="cp">
+        <div class="cp-step">Step 4,000</div>
+        <div class="cp-wer-wrap">
+          <div class="cp-wer-bar-bg"><div class="cp-wer-bar" style="width:64.9%"></div></div>
+          <div class="cp-wer-label">eval_loss: 0.996</div>
+        </div>
+        <div class="cp-wer-val">64.90<span>%</span></div>
+        <div class="cp-note">Slight regression</div>
+      </div>
+    </div>
+
+    <div style="margin-top:8px;">
+      <div class="right-label">Training Loss Curve — Step 25 → 4,000</div>
+      <div class="loss-row">
+        <div class="loss-col">
+          <div class="loss-bar-wrap"><div class="loss-bar" style="height:100%"></div></div>
+          <div class="loss-val">4.10</div>
+          <div class="loss-label">Step 25</div>
+        </div>
+        <div class="loss-col">
+          <div class="loss-bar-wrap"><div class="loss-bar" style="height:70%"></div></div>
+          <div class="loss-val">2.39</div>
+          <div class="loss-label">Step 250</div>
+        </div>
+        <div class="loss-col">
+          <div class="loss-bar-wrap"><div class="loss-bar" style="height:44%"></div></div>
+          <div class="loss-val">1.49</div>
+          <div class="loss-label">Step 950</div>
+        </div>
+        <div class="loss-col">
+          <div class="loss-bar-wrap"><div class="loss-bar" style="height:30%"></div></div>
+          <div class="loss-val">0.97</div>
+          <div class="loss-label">Step 1975</div>
+        </div>
+        <div class="loss-col">
+          <div class="loss-bar-wrap"><div class="loss-bar" style="height:22%"></div></div>
+          <div class="loss-val">0.65</div>
+          <div class="loss-label">Step 3000</div>
+        </div>
+        <div class="loss-col">
+          <div class="loss-bar-wrap"><div class="loss-bar" style="height:16%"></div></div>
+          <div class="loss-val">0.58</div>
+          <div class="loss-label">Step 4000</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slide-num">07 / 13</div>
+  <div class="bottom-bar"></div>
+</div>
+</body>
+</html>
