@@ -33,6 +33,10 @@ __pycache__/
 venv/
 env/
 
+# Node
+node_modules/
+*.png
+
 # IDE
 .vscode/
 .idea/
