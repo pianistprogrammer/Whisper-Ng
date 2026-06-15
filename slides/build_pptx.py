@@ -10,7 +10,7 @@ prs.slide_width  = Inches(13.33)
 prs.slide_height = Inches(7.5)
 BLANK = prs.slide_layouts[6]
 
-for i in range(1, 13):
+for i in range(1, 14):
     png = f"/Users/I558118/Documents/Projects/Whisper-Ng/slides/slide{i:02d}.png"
     slide = prs.slides.add_slide(BLANK)
     slide.shapes.add_picture(png, 0, 0, prs.slide_width, prs.slide_height)
