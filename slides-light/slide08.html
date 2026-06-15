@@ -6,58 +6,56 @@
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { width: 1920px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
-  .bg { width:100%; height:100%; background:#ffffff; position:relative; display:flex; flex-direction:column; padding:72px 96px 60px; }
+  .bg { width:100%; height:100%; background:#ffffff; position:relative; display:flex; flex-direction:column; padding:64px 96px 52px; }
 
-  .header { display:flex; align-items:center; gap:24px; margin-bottom:52px; }
+  .header { display:flex; align-items:center; gap:24px; margin-bottom:40px; }
   .tag { display:inline-flex; align-items:center; gap:8px; background:rgba(0,180,60,0.08); border:1px solid rgba(0,180,60,0.25); border-radius:100px; padding:7px 16px; width:fit-content; }
   .tag span { font-size:12px; font-weight:600; color:#00a846; text-transform:uppercase; letter-spacing:0.07em; }
   h2 { font-size:48px; font-weight:800; color:#0d1f12; line-height:1.05; letter-spacing:-1.5px; }
   h2 em { font-style:normal; color:#00a846; }
-  .sub { font-size:16px; color:rgba(0,0,0,0.4); margin-left:auto; line-height:1.4; text-align:right; }
+  .sub { font-size:15px; color:rgba(0,0,0,0.4); margin-left:auto; line-height:1.5; text-align:right; }
 
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:28px; flex:1; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; flex:1; }
 
   .card {
     background:#f7f9f7; border:1px solid rgba(0,0,0,0.07);
-    border-radius:20px; padding:32px 36px;
-    display:flex; flex-direction:column; gap:20px;
+    border-radius:20px; padding:26px 32px;
+    display:flex; flex-direction:column; gap:16px;
     position:relative; overflow:hidden;
   }
-  .card::before {
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-  }
+  .card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; }
   .card.yor::before { background:linear-gradient(90deg,#00a846,transparent); }
   .card.hau::before { background:linear-gradient(90deg,#1a7edc,transparent); }
   .card.ibo::before { background:linear-gradient(90deg,#d97b00,transparent); }
   .card.pcm::before { background:linear-gradient(90deg,#9a30e0,transparent); }
 
   .card-header { display:flex; align-items:center; gap:12px; }
-  .lang-badge {
-    font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase;
-    padding:4px 12px; border-radius:100px;
-  }
+  .lang-badge { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; padding:4px 12px; border-radius:100px; }
   .yor .lang-badge { background:rgba(0,168,70,0.12); color:#00863a; border:1px solid rgba(0,168,70,0.3); }
   .hau .lang-badge { background:rgba(26,126,220,0.12); color:#1a6dc0; border:1px solid rgba(26,126,220,0.3); }
   .ibo .lang-badge { background:rgba(217,123,0,0.12); color:#b36600; border:1px solid rgba(217,123,0,0.3); }
   .pcm .lang-badge { background:rgba(154,48,224,0.12); color:#7a22b8; border:1px solid rgba(154,48,224,0.3); }
 
-  .lang-name { font-size:15px; font-weight:600; color:rgba(0,0,0,0.5); }
-  .accuracy-pill {
-    margin-left:auto; font-size:11px; font-weight:700;
-    padding:4px 10px; border-radius:100px;
-    background:rgba(0,168,70,0.1); color:#00863a; border:1px solid rgba(0,168,70,0.25);
-  }
+  .lang-name { font-size:15px; font-weight:600; color:rgba(0,0,0,0.45); }
+
+  .wer-wrap { margin-left:auto; display:flex; gap:16px; align-items:flex-end; }
+  .wer-block { display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+  .wer-val { font-size:26px; font-weight:800; letter-spacing:-0.5px; line-height:1; }
+  .wer-val.norm { font-size:18px; font-weight:600; opacity:0.6; }
+  .yor .wer-val  { color:#00863a; }
+  .hau .wer-val  { color:#1a6dc0; }
+  .ibo .wer-val  { color:#b36600; }
+  .pcm .wer-val  { color:#7a22b8; }
+  .wer-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:rgba(0,0,0,0.28); }
+  .wer-divider { width:1px; height:32px; background:rgba(0,0,0,0.1); align-self:center; }
 
   .divider { height:1px; background:rgba(0,0,0,0.06); }
 
-  .row { display:flex; flex-direction:column; gap:8px; }
-  .row-label {
-    font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.09em;
-    color:rgba(0,0,0,0.35);
-  }
+  .row { display:flex; flex-direction:column; gap:6px; }
+  .row-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.09em; color:rgba(0,0,0,0.3); }
   .row-text {
-    font-size:22px; font-weight:500; color:#0d1f12; line-height:1.4;
-    background:rgba(0,0,0,0.03); border-radius:10px; padding:12px 16px;
+    font-size:20px; font-weight:500; color:#0d1f12; line-height:1.4;
+    background:rgba(0,0,0,0.03); border-radius:10px; padding:11px 15px;
     border:1px solid rgba(0,0,0,0.06);
   }
   .yor .row-text.hyp { background:rgba(0,168,70,0.07); border-color:rgba(0,168,70,0.2); }
@@ -65,7 +63,11 @@
   .ibo .row-text.hyp { background:rgba(217,123,0,0.07); border-color:rgba(217,123,0,0.2); }
   .pcm .row-text.hyp { background:rgba(154,48,224,0.07); border-color:rgba(154,48,224,0.2); }
 
-  .slide-num { position:absolute; bottom:32px; right:48px; font-size:13px; color:rgba(0,0,0,0.2); }
+  .footnote {
+    margin-top:14px; font-size:12px; color:rgba(0,0,0,0.3); text-align:center; line-height:1.5;
+  }
+
+  .slide-num { position:absolute; bottom:28px; right:48px; font-size:13px; color:rgba(0,0,0,0.2); }
   .bottom-bar { position:absolute; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#00a846 0%,transparent 60%); }
 </style>
 </head>
@@ -74,10 +76,10 @@
 
   <div class="header">
     <div>
-      <div class="tag" style="margin-bottom:14px;"><span>Model Outputs</span></div>
+      <div class="tag" style="margin-bottom:12px;"><span>Model Outputs</span></div>
       <h2>Sample <em>Transcriptions</em></h2>
     </div>
-    <div class="sub">Near-perfect results on short utterances<br>across all four target languages</div>
+    <div class="sub">Best example per language · WER from full evaluation suite<br>Raw WER shown first, normalized in parentheses</div>
   </div>
 
   <div class="grid">
@@ -87,16 +89,26 @@
       <div class="card-header">
         <div class="lang-badge">YOR</div>
         <div class="lang-name">Yoruba</div>
-        <div class="accuracy-pill">Near Perfect</div>
+        <div class="wer-wrap">
+          <div class="wer-block">
+            <div class="wer-val">29.56%</div>
+            <div class="wer-label">WER (raw)</div>
+          </div>
+          <div class="wer-divider"></div>
+          <div class="wer-block">
+            <div class="wer-val norm">26.75%</div>
+            <div class="wer-label">normalized</div>
+          </div>
+        </div>
       </div>
       <div class="divider"></div>
       <div class="row">
         <div class="row-label">Expected</div>
-        <div class="row-text">Adé Yélò lórí Omi</div>
+        <div class="row-text">Fúfú ni oúnjẹ àwọn Ibò, pẹ̀lú ẹgúsí.</div>
       </div>
       <div class="row">
         <div class="row-label">Transcribed</div>
-        <div class="row-text hyp">Adè yẹlò lórí omi</div>
+        <div class="row-text hyp">Fufú ni òúnjẹ àwọn ìbò pẹ̀lú ẹgúsí.</div>
       </div>
     </div>
 
@@ -105,7 +117,17 @@
       <div class="card-header">
         <div class="lang-badge">HAU</div>
         <div class="lang-name">Hausa</div>
-        <div class="accuracy-pill">Near Perfect</div>
+        <div class="wer-wrap">
+          <div class="wer-block">
+            <div class="wer-val">66.43%</div>
+            <div class="wer-label">WER (raw)</div>
+          </div>
+          <div class="wer-divider"></div>
+          <div class="wer-block">
+            <div class="wer-val norm">62.31%</div>
+            <div class="wer-label">normalized</div>
+          </div>
+        </div>
       </div>
       <div class="divider"></div>
       <div class="row">
@@ -123,7 +145,17 @@
       <div class="card-header">
         <div class="lang-badge">IBO</div>
         <div class="lang-name">Igbo</div>
-        <div class="accuracy-pill">Near Perfect</div>
+        <div class="wer-wrap">
+          <div class="wer-block">
+            <div class="wer-val">91.03%</div>
+            <div class="wer-label">WER (raw)</div>
+          </div>
+          <div class="wer-divider"></div>
+          <div class="wer-block">
+            <div class="wer-val norm">87.92%</div>
+            <div class="wer-label">normalized</div>
+          </div>
+        </div>
       </div>
       <div class="divider"></div>
       <div class="row">
@@ -141,7 +173,17 @@
       <div class="card-header">
         <div class="lang-badge">PCM</div>
         <div class="lang-name">Nigerian Pidgin</div>
-        <div class="accuracy-pill">Near Perfect</div>
+        <div class="wer-wrap">
+          <div class="wer-block">
+            <div class="wer-val">73.19%</div>
+            <div class="wer-label">WER (raw)</div>
+          </div>
+          <div class="wer-divider"></div>
+          <div class="wer-block">
+            <div class="wer-val norm">67.91%</div>
+            <div class="wer-label">normalized</div>
+          </div>
+        </div>
       </div>
       <div class="divider"></div>
       <div class="row">
@@ -155,6 +197,8 @@
     </div>
 
   </div>
+
+  <div class="footnote">Overall WER: 76.64% raw · 72.46% normalized &nbsp;·&nbsp; Yoruba leads at 29.56% — the most represented language in training data &nbsp;·&nbsp; Normalized WER strips punctuation and lowercases before scoring</div>
 
   <div class="slide-num">08 / 13</div>
   <div class="bottom-bar"></div>
